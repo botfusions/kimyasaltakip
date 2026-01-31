@@ -20,37 +20,133 @@
 
 > **Legend:** `file.ts <- A.tsx, B.tsx` = This file is **imported by** A.tsx and B.tsx.
 > Directories with `[N files: ...]` are summarized to reduce size.
-> [STATS] Showing 14 files. 1 dirs summarized, 0 dirs excluded (node_modules, etc.)
+> [STATS] Showing 70 files. 3 dirs summarized, 4 dirs excluded (node_modules, etc.)
 
 
 ```
-docs/ [4 files: 3 .md, 1 no-ext]
+docs/ [12 files: 11 .md, 1 no-ext]
 frontend/
   .env.local
+  .env.local.example
   .gitignore
   README.md
   next.config.mjs
+  package-lock.json
   package.json
   postcss.config.js
   src/
     app/
+      actions/
+        auth.ts ← Header.tsx, layout.tsx, page.tsx +1 more
+        expert.ts ← ExpertConsultantClient.tsx
+        materials.ts ← MaterialModal.tsx, MaterialsManagementClient.tsx, RecipeEditor.tsx
+        products.ts ← ProductModal.tsx, ProductsManagementClient.tsx, page.tsx +1 more
+        recipes.ts ← RecipeDetailsView.tsx, RecipeEditor.tsx, RecipeManagementClient.tsx +3 more
+        reports.ts
+        settings.ts ← SettingsClient.tsx, page.tsx
+        stock.ts ← page.tsx
+        test-email.ts ← page.tsx
+        users.ts ← UserManagementClient.tsx, UserModal.tsx, page.tsx
+      dashboard/
+        expert/
+          page.tsx
+        layout.tsx
+        materials/
+          page.tsx
+        page.tsx
+        products/
+          page.tsx
+        recipes/
+          [id]/
+            edit/
+              page.tsx
+            page.tsx
+          new/
+            page.tsx
+          page.tsx
+        settings/
+          page.tsx
+          test-email/
+            page.tsx
+        users/
+          page.tsx
       globals.css
       layout.tsx
+      login/
+        page.tsx
       page.tsx
+    components/
+      dashboard/
+        Header.tsx ← layout.tsx
+        Sidebar.tsx ← layout.tsx
+      expert/
+        ExpertConsultantClient.tsx ← page.tsx
+      materials/
+        MaterialModal.tsx ← MaterialsManagementClient.tsx
+        MaterialsManagementClient.tsx ← page.tsx
+      products/
+        ProductModal.tsx ← ProductsManagementClient.tsx
+        ProductsManagementClient.tsx ← page.tsx
+      recipes/
+        RecipeDetailsView.tsx ← page.tsx
+        RecipeEditor.tsx ← page.tsx, page.tsx
+        RecipeFormPDF.tsx
+        RecipeManagementClient.tsx ← page.tsx
+        SignatureVerificationModal.tsx ← RecipeDetailsView.tsx, RecipeManagementClient.tsx
+      settings/
+        SettingsClient.tsx
+      ui/
+        Button.tsx ← Header.tsx, ExpertConsultantClient.tsx, MaterialModal.tsx +11 more
+        Input.tsx ← MaterialModal.tsx, MaterialsManagementClient.tsx, ProductModal.tsx +8 more
+        Modal.tsx ← MaterialModal.tsx, ProductModal.tsx, SignatureVerificationModal.tsx +1 more
+        Table.tsx ← UserManagementClient.tsx
+      users/
+        UserManagementClient.tsx ← page.tsx
+        UserModal.tsx ← UserManagementClient.tsx
     lib/
+      barcode.ts ← RecipeFormPDF.tsx
+      email.ts ← recipes.ts, reports.ts, test-email.ts
+      reports.ts ← reports.ts
       supabase/
         client.ts
-        server.ts
+        middleware.ts
+        server.ts ← email.ts, reports.ts
+      utils.ts ← Sidebar.tsx, Button.tsx, Input.tsx +2 more
+      validations/
+        auth.ts ← auth.ts
+        user.ts ← users.ts
+    middleware.ts
     types/
-      index.ts
+      database.types.ts
+      index.ts ← read-pdf-ocr.py
+    utils/
+      recipePdf.ts ← RecipeDetailsView.tsx
+  supabase/
+    migrations/ [4 files: 4 .sql]
   tailwind.config.ts
+  test-email-script.mjs
   tsconfig.json
+  tsconfig.tsbuildinfo
+supabase/
+  migrations/ [10 files: 9 .sql, 1 .bak]
 ```
 
 
 ## File Dependencies
 
-> Scanned 8 files
+> Scanned 65 files
+
+### High-Impact Files
+
+*Files imported by multiple other files:*
+
+| File | Imported by |
+|------|-------------|
+| `src/components/ui/Button` | 14 files |
+| `src/components/ui/Input` | 11 files |
+| `src/lib/supabase/server` | 8 files |
+| `src/app/actions/recipes` | 6 files |
+| `frontend/src/app/actions/auth` | 6 files |
 
 
 ---

@@ -17,6 +17,7 @@ interface Product {
     target_density: number | null;
     shelf_life_days: number | null;
     is_active: boolean;
+    created_at: string;
 }
 
 interface Props {

@@ -60,13 +60,32 @@ export default function RecipeEditor({ products, recipeId }: Props) {
     const [items, setItems] = useState<RecipeItem[]>([]);
 
     // New PDF form fields
-    const [recipeNameNo, setRecipeNameNo] = useState('');
-    const [colorCode, setColorCode] = useState('');
-    const [yarnCode, setYarnCode] = useState('');
-    const [planningDate, setPlanningDate] = useState('');
+    const [orderCode, setOrderCode] = useState(''); // Reçete İş Emri No
+    const [colorCode, setColorCode] = useState(''); // Renk No
+    const [processInfo, setProcessInfo] = useState(''); // Proses
+    const [totalWeight, setTotalWeight] = useState(''); // Toplam Kg
+    const [machineCode, setMachineCode] = useState(''); // Kazan Kodu
+
+    const [planningDate, setPlanningDate] = useState(''); // Planlama Tarihi
+    const [colorName, setColorName] = useState(''); // Renk
+    const [orderDate, setOrderDate] = useState(''); // İş Emri Tarihi
+    const [bathVolume, setBathVolume] = useState(''); // Banyo Miktar
+    const [batchRatio, setBatchRatio] = useState(''); // Banyo Oranı
+
+    // Order Details Table Fields
+    const [sipNo, setSipNo] = useState(''); // Sip. No
+    const [customerRefNo, setCustomerRefNo] = useState(''); // Ref. No
+    const [customerName, setCustomerName] = useState(''); // Müşteri
+    const [customerSipMt, setCustomerSipMt] = useState(''); // Sip Mt
+    const [customerOrderNo, setCustomerOrderNo] = useState(''); // M. Sip No
+    const [yarnType, setYarnType] = useState(''); // İplik
+    const [cCozg, setCCozg] = useState(''); // C/Çözg
+    const [lotNo, setLotNo] = useState(''); // Lot No
+    const [brandName, setBrandName] = useState(''); // Marka
+
+    const [recipeNameNo, setRecipeNameNo] = useState(''); // Kept if needed or map to orderCode
     const [startDate, setStartDate] = useState('');
     const [finishDate, setFinishDate] = useState('');
-    const [batchRatio, setBatchRatio] = useState('');
     const [processWashCount, setProcessWashCount] = useState('');
     const [cauldronQuantity, setCauldronQuantity] = useState('');
 
@@ -105,7 +124,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
             // Load new fields
             setRecipeNameNo(result.data.recipe_name_no || '');
             setColorCode(result.data.color_code || '');
-            setYarnCode(result.data.yarn_code || '');
+            setYarnType(result.data.yarn_type || result.data.yarn_code || '');
             setPlanningDate(result.data.planning_date || '');
             setStartDate(result.data.start_date || '');
             setFinishDate(result.data.finish_date || '');
@@ -180,11 +199,11 @@ export default function RecipeEditor({ products, recipeId }: Props) {
         setError('');
 
         // Validation
-        if (!selectedProductId) {
-            setError('Lütfen bir ürün seçin');
-            setIsLoading(false);
-            return;
-        }
+        // if (!selectedProductId) {
+        //     setError('Lütfen bir ürün seçin');
+        //     setIsLoading(false);
+        //     return;
+        // }
 
         if (!versionCode) {
             setError('Versiyon kodu gereklidir');
@@ -213,19 +232,37 @@ export default function RecipeEditor({ products, recipeId }: Props) {
         */
 
         const formData = new FormData();
-        formData.append('product_id', selectedProductId);
+        if (selectedProductId) formData.append('product_id', selectedProductId); // Optional now
         formData.append('version_code', versionCode);
         formData.append('notes', notes);
         formData.append('items', JSON.stringify(validItems));
 
         // Add new fields
-        if (recipeNameNo) formData.append('recipe_name_no', recipeNameNo);
+        if (orderCode) formData.append('order_code', orderCode);
         if (colorCode) formData.append('color_code', colorCode);
-        if (yarnCode) formData.append('yarn_code', yarnCode);
+        if (processInfo) formData.append('process_info', processInfo);
+        if (totalWeight) formData.append('total_weight', totalWeight);
+        if (machineCode) formData.append('machine_code', machineCode);
+
         if (planningDate) formData.append('planning_date', planningDate);
+        if (colorName) formData.append('color_name', colorName);
+        if (orderDate) formData.append('work_order_date', orderDate);
+        if (bathVolume) formData.append('bath_volume', bathVolume);
+        if (batchRatio) formData.append('batch_ratio', batchRatio);
+
+        if (sipNo) formData.append('sip_no', sipNo);
+        if (customerRefNo) formData.append('customer_ref_no', customerRefNo);
+        if (customerName) formData.append('customer_name', customerName);
+        if (customerSipMt) formData.append('customer_sip_mt', customerSipMt);
+        if (customerOrderNo) formData.append('customer_order_no', customerOrderNo);
+        if (yarnType) formData.append('yarn_type', yarnType);
+        if (cCozg) formData.append('c_cozg', cCozg);
+        if (lotNo) formData.append('lot_no', lotNo);
+        if (brandName) formData.append('brand_name', brandName);
+
+        if (recipeNameNo) formData.append('recipe_name_no', recipeNameNo);
         if (startDate) formData.append('start_date', startDate);
         if (finishDate) formData.append('finish_date', finishDate);
-        if (batchRatio) formData.append('batch_ratio', batchRatio);
         if (processWashCount) formData.append('process_wash_count', processWashCount);
         if (cauldronQuantity) formData.append('cauldron_quantity', cauldronQuantity);
 
@@ -270,84 +307,151 @@ export default function RecipeEditor({ products, recipeId }: Props) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Basic Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        Temel Bilgiler
+                {/* Reçete Bilgileri (Top Section) */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-2">
+                        Reçete Bilgileri
                     </h2>
 
-                    {/* Product Selection */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Ürün Seçimi *
-                        </label>
-                        <select
-                            value={selectedProductId}
-                            onChange={(e) => setSelectedProductId(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            required
-                        >
-                            <option value="">Lütfen bir ürün seçin...</option>
-                            {products.map((product) => (
-                                <option key={product.id} value={product.id}>
-                                    {product.name} ({product.code})
-                                </option>
-                            ))}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left Column */}
+                        <div className="space-y-4">
+                            <Input
+                                label="Reçete İş Emri No"
+                                value={orderCode}
+                                onChange={(e) => setOrderCode(e.target.value)}
+                                placeholder="Örn: 94275"
+                                required
+                            />
+                            <Input
+                                label="Renk No"
+                                value={colorCode}
+                                onChange={(e) => setColorCode(e.target.value)}
+                                placeholder="Örn: BNXKB045521"
+                            />
+                            <Input
+                                label="Proses"
+                                value={processInfo}
+                                onChange={(e) => setProcessInfo(e.target.value)}
+                                placeholder="Örn: 60 C AÇIK YIK. PROG. 5"
+                            />
+                            <Input
+                                label="Toplam Kg"
+                                type="number"
+                                value={totalWeight}
+                                onChange={(e) => setTotalWeight(e.target.value)}
+                                placeholder="1.602,24"
+                            />
+                            <Input
+                                label="Kazan Kodu"
+                                value={machineCode}
+                                onChange={(e) => setMachineCode(e.target.value)}
+                                placeholder="250/2 L.Bellini"
+                            />
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-4">
+                            <Input
+                                label="Planlama Tarihi"
+                                type="datetime-local"
+                                value={planningDate}
+                                onChange={(e) => setPlanningDate(e.target.value)}
+                            />
+                            <Input
+                                label="Renk Adı"
+                                value={colorName}
+                                onChange={(e) => setColorName(e.target.value)}
+                                placeholder="Örn: BEJ"
+                            />
+                            <Input
+                                label="İş Emri Tarihi"
+                                type="date"
+                                value={orderDate}
+                                onChange={(e) => setOrderDate(e.target.value)}
+                            />
+                            <Input
+                                label="Banyo Miktar"
+                                type="number"
+                                value={bathVolume}
+                                onChange={(e) => setBathVolume(e.target.value)}
+                                placeholder="*"
+                            />
+                            <Input
+                                label="Banyo Oranı"
+                                value={batchRatio}
+                                onChange={(e) => setBatchRatio(e.target.value)}
+                                placeholder="9,2"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sipariş Detayları (Middle Section) */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-2">
+                        Sipariş Detayları
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Input
+                            label="Sip. No"
+                            value={sipNo}
+                            onChange={(e) => setSipNo(e.target.value)}
+                            placeholder="TTL14344BS-1"
+                        />
+                        <Input
+                            label="Ref. No"
+                            value={customerRefNo}
+                            onChange={(e) => setCustomerRefNo(e.target.value)}
+                            placeholder="146882"
+                        />
+                        <Input
+                            label="Müşteri"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="RATEKS TEKSTİL"
+                        />
+                        <Input
+                            label="Sip Mt"
+                            value={customerSipMt}
+                            onChange={(e) => setCustomerSipMt(e.target.value)}
+                            placeholder="001672"
+                        />
+                        <Input
+                            label="M. Sip No"
+                            value={customerOrderNo}
+                            onChange={(e) => setCustomerOrderNo(e.target.value)}
+                            placeholder="001672/001672"
+                        />
+                        <Input
+                            label="İplik"
+                            value={yarnType}
+                            onChange={(e) => setYarnType(e.target.value)}
+                            placeholder="16/1 RING %100 PAMUK"
+                        />
+                        <Input
+                            label="C/Çözg"
+                            value={cCozg}
+                            onChange={(e) => setCCozg(e.target.value)}
+                            placeholder="C/Çözg"
+                        />
+                        <Input
+                            label="Lot No"
+                            value={lotNo}
+                            onChange={(e) => setLotNo(e.target.value)}
+                            placeholder="1704"
+                        />
+                        <Input
+                            label="Marka"
+                            value={brandName}
+                            onChange={(e) => setBrandName(e.target.value)}
+                            placeholder="Marka"
+                        />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                            label="Versiyon Kodu"
-                            value={versionCode}
-                            onChange={(e) => setVersionCode(e.target.value)}
-                            placeholder="Örn: V1.0, REV-001"
-                            required
-                        />
-                        <Input
-                            label="Reçete Adı/No"
-                            value={recipeNameNo}
-                            onChange={(e) => setRecipeNameNo(e.target.value)}
-                            placeholder="Reçete adı veya numarası"
-                        />
-                        <Input
-                            label="Renk Kodu"
-                            value={colorCode}
-                            onChange={(e) => setColorCode(e.target.value)}
-                            placeholder="Örn: RAL 5010"
-                        />
-                        <Input
-                            label="İplik Kodu"
-                            value={yarnCode}
-                            onChange={(e) => setYarnCode(e.target.value)}
-                            placeholder="İplik kodu"
-                        />
-                        <Input
-                            label="Planlama Tarihi"
-                            type="date"
-                            value={planningDate}
-                            onChange={(e) => setPlanningDate(e.target.value)}
-                        />
-                        <Input
-                            label="Başlangıç Tarihi"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                        <Input
-                            label="Bitiş Tarihi"
-                            type="date"
-                            value={finishDate}
-                            onChange={(e) => setFinishDate(e.target.value)}
-                        />
-                        <Input
-                            label="Parti Oranı (1:n)"
-                            type="number"
-                            step="0.01"
-                            value={batchRatio}
-                            onChange={(e) => setBatchRatio(e.target.value)}
-                            placeholder="Örn: 100"
-                        />
+                    {/* Extra fields below Sipariş Detayları */}
+                    <div className="border-t pt-4 mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Input
                             label="Proses Yıkama Sayısı"
                             type="number"

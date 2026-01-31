@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import SignatureVerificationModal from './SignatureVerificationModal';
 import { rejectRecipeForRevision } from '@/app/actions/recipes';
 import { generateRecipePDF } from '@/utils/recipePdf';
+import { generateBarcodeDataURL } from '@/lib/barcode';
 
 interface RecipeItem {
     id: string;
@@ -23,16 +24,19 @@ interface RecipeItem {
 interface Recipe {
     id: string;
     version_code: string;
+    barcode?: string | null;
     status: string;
     notes: string | null;
     created_at: string;
     approved_at: string | null;
+    order_code?: string | null;
+    customer_name?: string | null;
     product: {
         id: string;
         code: string;
         name: string;
         unit: string;
-    };
+    } | null;
     created_by_user: {
         id: string;
         name: string;
@@ -100,6 +104,9 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
 
     const totalQuantity = recipe.recipe_items.reduce((sum, item) => sum + item.quantity, 0);
 
+    const barcodeValue = recipe.barcode || recipe.order_code || recipe.version_code;
+    const barcodeDataURL = barcodeValue ? generateBarcodeDataURL(barcodeValue) : null;
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
             {/* Header */}
@@ -120,12 +127,30 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
                             {STATUS_LABELS[recipe.status]?.label}
                         </span>
                     </div>
+                    {recipe.order_code && (
+                        <p className="text-lg font-medium text-blue-600 dark:text-blue-400 mt-1">
+                            İş Emri: {recipe.order_code}
+                        </p>
+                    )}
                     <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        Ürün: <span className="font-semibold text-gray-900 dark:text-white">{recipe.product.name}</span> ({recipe.product.code})
+                        {recipe.customer_name ? (
+                            <>Müşteri: <span className="font-semibold text-gray-900 dark:text-white">{recipe.customer_name}</span></>
+                        ) : null}
+                        {recipe.product && (
+                            <>
+                                {recipe.customer_name ? ' / ' : ''}
+                                Ürün: <span className="font-semibold text-gray-900 dark:text-white">{recipe.product.name}</span> ({recipe.product.code})
+                            </>
+                        )}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    {barcodeDataURL && (
+                        <div className="bg-white p-2 rounded shadow-sm">
+                            <img src={barcodeDataURL} alt="Barcode" className="h-12" />
+                        </div>
+                    )}
                     {recipe.status !== 'approved' && (
                         <>
                             <Button
@@ -208,7 +233,7 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
                                     <tr>
                                         <td className="px-6 py-4 text-gray-900 dark:text-white">TOPLAM</td>
                                         <td className="px-6 py-4 text-right text-gray-900 dark:text-white">
-                                            {totalQuantity.toFixed(2)} {recipe.product.unit}
+                                            {totalQuantity.toFixed(2)} {recipe.product?.unit || 'kg'}
                                         </td>
                                         <td className="px-6 py-4 text-right text-gray-900 dark:text-white">100.00%</td>
                                         <td></td>

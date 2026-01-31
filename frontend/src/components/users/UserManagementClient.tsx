@@ -14,6 +14,7 @@ interface User {
     role: string;
     is_active: boolean;
     phone: string | null;
+    signature_id: string | null;
     created_at: string;
     last_login_at: string | null;
 }
@@ -221,8 +222,8 @@ export default function UserManagementClient({ initialUsers }: Props) {
                                         <button
                                             onClick={() => handleToggleStatus(user.id)}
                                             className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded transition-colors ${user.is_active
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                 }`}
                                         >
                                             {user.is_active ? '✓ Aktif' : '○ Pasif'}

@@ -9,10 +9,11 @@ import { approveRecipe } from '@/app/actions/recipes';
 interface Recipe {
     id: string;
     version_code: string;
+    order_code?: string | null;
     product?: {
         name: string;
         code: string;
-    };
+    } | null;
     recipe_items?: Array<{
         material: {
             name: string;
@@ -74,17 +75,25 @@ export default function SignatureVerificationModal({ recipe, onClose }: Props) {
                     </h3>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-blue-700 dark:text-blue-300">Ürün:</span>
-                            <span className="font-semibold text-blue-900 dark:text-blue-100">
-                                {recipe.product?.name || 'Bilinmiyor'}
+                            <span className="text-blue-700 dark:text-blue-300">İş Emri No:</span>
+                            <span className="font-mono font-semibold text-blue-900 dark:text-blue-100">
+                                {recipe.order_code || '-'}
                             </span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-blue-700 dark:text-blue-300">Ürün Kodu:</span>
-                            <span className="font-mono font-semibold text-blue-900 dark:text-blue-100">
-                                {recipe.product?.code || '-'}
+                            <span className="text-blue-700 dark:text-blue-300">Ürün:</span>
+                            <span className="font-semibold text-blue-900 dark:text-blue-100">
+                                {recipe.product?.name || '-'}
                             </span>
                         </div>
+                        {recipe.product?.code && (
+                            <div className="flex justify-between">
+                                <span className="text-blue-700 dark:text-blue-300">Ürün Kodu:</span>
+                                <span className="font-mono font-semibold text-blue-900 dark:text-blue-100">
+                                    {recipe.product.code}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="text-blue-700 dark:text-blue-300">Versiyon:</span>
                             <span className="font-mono font-semibold text-blue-900 dark:text-blue-100">

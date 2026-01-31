@@ -14,11 +14,14 @@ interface Recipe {
     notes: string | null;
     created_at: string;
     approved_at: string | null;
+    order_code?: string | null;
+    customer_name?: string | null;
+    color_name?: string | null;
     product: {
         id: string;
         code: string;
         name: string;
-    };
+    } | null;
     created_by_user: {
         id: string;
         name: string;
@@ -66,8 +69,9 @@ export default function RecipeManagementClient() {
             filtered = filtered.filter(
                 (r) =>
                     r.version_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    r.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    r.product.code.toLowerCase().includes(searchTerm.toLowerCase())
+                    (r.order_code && r.order_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (r.customer_name && r.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (r.product && r.product.name.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         }
 
@@ -141,7 +145,7 @@ export default function RecipeManagementClient() {
                 <div className="flex-1">
                     <Input
                         type="search"
-                        placeholder="Reçete ara (versiyon, ürün adı, kod)..."
+                        placeholder="Reçete ara (iş emri, müşteri, ürün)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -190,10 +194,10 @@ export default function RecipeManagementClient() {
                             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                        Versiyon
+                                        İş Emri / Versiyon
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                        Ürün
+                                        Müşteri / Renk
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Durum
@@ -216,17 +220,20 @@ export default function RecipeManagementClient() {
                                         className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
-                                                {recipe.version_code}
-                                            </span>
+                                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                {recipe.order_code || '-'}
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                v{recipe.version_code}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {recipe.product.name}
+                                                    {recipe.customer_name || recipe.product?.name || 'Genel'}
                                                 </p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {recipe.product.code}
+                                                    {recipe.color_name || '-'}
                                                 </p>
                                             </div>
                                         </td>

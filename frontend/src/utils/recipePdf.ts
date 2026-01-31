@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { UserOptions } from 'jspdf-autotable';
+import { generateBarcodeDataURL } from '@/lib/barcode';
 
 interface RecipeItem {
     material: {
@@ -15,11 +16,13 @@ interface RecipeItem {
 
 interface Recipe {
     version_code: string;
+    barcode?: string | null;
+    order_code?: string | null;
     product: {
         code: string;
         name: string;
         unit: string;
-    };
+    } | null;
     created_by_user: {
         name: string;
     };
@@ -50,6 +53,15 @@ export const generateRecipePDF = (recipe: Recipe) => {
     doc.setTextColor(40, 40, 40);
     doc.text(t('URUN RECETESI'), 14, 22);
 
+    // Barcode
+    const barcodeValue = recipe.barcode || recipe.order_code || recipe.version_code;
+    if (barcodeValue) {
+        const barcodeDataURL = generateBarcodeDataURL(barcodeValue);
+        if (barcodeDataURL) {
+            doc.addImage(barcodeDataURL, 'PNG', 150, 10, 45, 15);
+        }
+    }
+
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(t(`Versiyon: ${recipe.version_code}`), 14, 28);
@@ -66,9 +78,9 @@ export const generateRecipePDF = (recipe: Recipe) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(t(`Urun Adi: ${recipe.product.name}`), 20, 55);
-    doc.text(t(`Urun Kodu: ${recipe.product.code}`), 20, 60);
-    doc.text(t(`Olcu Birimi: ${recipe.product.unit}`), 20, 65);
+    doc.text(t(`Urun Adi: ${recipe.product?.name || '-'}`), 20, 55);
+    doc.text(t(`Urun Kodu: ${recipe.product?.code || '-'}`), 20, 60);
+    doc.text(t(`Olcu Birimi: ${recipe.product?.unit || 'kg'}`), 20, 65);
 
     // --- Materials Table ---
     const tableData = recipe.recipe_items.map(item => [
@@ -85,7 +97,7 @@ export const generateRecipePDF = (recipe: Recipe) => {
         startY: 75,
         head: [[t('Malzeme'), t('Kod'), t('Miktar'), t('Oran (%)'), t('Notlar')]],
         body: tableData,
-        foot: [[t('TOPLAM'), '', `${totalQuantity.toFixed(2)} ${recipe.product.unit}`, '100.00%', '']],
+        foot: [[t('TOPLAM'), '', `${totalQuantity.toFixed(2)} ${recipe.product?.unit || 'kg'}`, '100.00%', '']],
         theme: 'striped',
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' },

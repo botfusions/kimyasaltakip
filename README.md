@@ -32,6 +32,8 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 ### 📋 Reçete Yönetimi
 
 #### Reçete Oluşturma ve Düzenleme
+- **Esnek Ürün Seçimi** - Ürünlü veya ürünsüz reçete oluşturma
+- **Boyahane Üretim Takip Formu** - İş emri, müşteri, renk ve proses detayları
 - **Dinamik malzeme seçici** - Sürükle-bırak ile kolay düzenleme
 - **Otomatik yüzde hesaplama** - Toplam %100 kontrolü
 - **Miktar ve oran doğrulama**
@@ -350,15 +352,23 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - [x] Admin Settings Paneli
 - [x] Otomatik Stok Düşümü
 - [x] Dashboard Widget'ları
+- [x] Recipe PDF Generation (Barkodlu)
+- [x] Barcode Generation
 
 ### 🚧 Geliştiriliyor
-- [ ] Recipe PDF Generation
 - [ ] Scheduled Monthly Reports (Supabase Edge Functions)
 
 ### 📋 Planlanan (Phase 5)
 - [ ] Mobile App (React Native)
 - [ ] Advanced Analytics
-- [ ] Barcode Scanning
+### 3. Barcode Scanning & Generation
+- **Otomatik Barkod** - İş emri veya versiyon kodundan otomatik üretim
+- **PDF Entegrasyonu** - Reçete çıktılarında taranabilir barkod
+- **Detay Görünümü** - Reçete detaylarında barkod görseli
+
+### 📋 Planlanan (Phase 5)
+- [ ] Mobile App (React Native)
+- [ ] Advanced Analytics
 - [ ] QR Code Generation
 
 ---

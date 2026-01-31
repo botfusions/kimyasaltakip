@@ -14,6 +14,8 @@ interface User {
     is_active: boolean;
     phone: string | null;
     signature_id: string | null;
+    created_at: string;
+    last_login_at: string | null;
 }
 
 interface Props {

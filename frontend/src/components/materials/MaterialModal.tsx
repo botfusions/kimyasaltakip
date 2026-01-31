@@ -17,6 +17,7 @@ interface Material {
     min_stock: number | null;
     max_stock: number | null;
     is_active: boolean;
+    created_at: string;
 }
 
 interface Props {
