@@ -35,10 +35,6 @@ export async function getProducts(filters?: {
         .order('name', { ascending: true });
 
     // Apply filters
-    if (filters?.type) {
-        query = query.eq('type', filters.type);
-    }
-
     if (filters?.is_active !== undefined) {
         query = query.eq('is_active', filters.is_active);
     }
@@ -88,17 +84,13 @@ export async function createProduct(formData: FormData) {
     const productData = {
         code: formData.get('code') as string,
         name: formData.get('name') as string,
-        type: formData.get('type') as string,
-        unit: formData.get('unit') as string,
         description: formData.get('description') as string || null,
-        target_ph: formData.get('target_ph') as string || null,
-        target_density: parseFloat(formData.get('target_density') as string) || null,
-        shelf_life_days: parseInt(formData.get('shelf_life_days') as string, 10) || null,
+        base_color: formData.get('base_color') as string || null,
         is_active: formData.get('is_active') === 'true',
     };
 
     // Validate required fields
-    if (!productData.code || !productData.name || !productData.type || !productData.unit) {
+    if (!productData.code || !productData.name) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
 
@@ -144,16 +136,12 @@ export async function updateProduct(productId: string, formData: FormData) {
     const productData = {
         code: formData.get('code') as string,
         name: formData.get('name') as string,
-        type: formData.get('type') as string,
-        unit: formData.get('unit') as string,
         description: formData.get('description') as string || null,
-        target_ph: formData.get('target_ph') as string || null,
-        target_density: parseFloat(formData.get('target_density') as string) || null,
-        shelf_life_days: parseInt(formData.get('shelf_life_days') as string, 10) || null,
+        base_color: formData.get('base_color') as string || null,
         is_active: formData.get('is_active') === 'true',
     };
 
-    if (!productData.code || !productData.name || !productData.type || !productData.unit) {
+    if (!productData.code || !productData.name) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
 

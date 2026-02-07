@@ -28,7 +28,7 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
         const genAI = new GoogleGenerativeAI(apiKey);
 
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: `${KNOWLEDGE_BASE.persona}\n\nKullanabileceğin teknik bilgi havuzu:\n${KNOWLEDGE_BASE.chemicals}\n\n${KNOWLEDGE_BASE.iso_standards}\n\n${KNOWLEDGE_BASE.production}\n\nYanıtlarını bu teknik verilere dayandır ve her zaman profesyonel teknik format kullan.`
         });
 

@@ -513,6 +513,9 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                                             Malzeme
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                                            Stok Kodu
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                                             Miktar
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
@@ -545,6 +548,15 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                                                         </option>
                                                     ))}
                                                 </select>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="text"
+                                                    value={item.material_code || ''}
+                                                    readOnly
+                                                    className="w-32 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed"
+                                                    placeholder="-"
+                                                />
                                             </td>
                                             <td className="px-4 py-3">
                                                 <input
@@ -613,9 +625,11 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                                         <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
                                             TOPLAM
                                         </td>
+                                        <td className="px-4 py-3"></td>
                                         <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
                                             {totalQuantity.toFixed(2)} {selectedProductId ? products.find(p => p.id === selectedProductId)?.unit || '' : ''}
                                         </td>
+                                        <td className="px-4 py-3"></td>
                                         <td className="px-4 py-3">
                                             <span
                                                 className={`text-sm font-bold ${Math.abs(totalPercentage - 100) < 0.5
@@ -626,7 +640,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                                                 {totalPercentage.toFixed(2)}%
                                             </span>
                                         </td>
-                                        <td colSpan={3}></td>
+                                        <td colSpan={2}></td>
                                     </tr>
                                 </tfoot>
                             </table>

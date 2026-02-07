@@ -20,11 +20,14 @@
 
 > **Legend:** `file.ts <- A.tsx, B.tsx` = This file is **imported by** A.tsx and B.tsx.
 > Directories with `[N files: ...]` are summarized to reduce size.
-> [STATS] Showing 70 files. 3 dirs summarized, 4 dirs excluded (node_modules, etc.)
+> [STATS] Showing 73 files. 2 dirs summarized, 4 dirs excluded (node_modules, etc.)
 
 
 ```
-docs/ [12 files: 11 .md, 1 no-ext]
+docs/ [15 files: 14 .md, 1 no-ext]
+fatura/
+  7350213672_RUD2025000023792.pdf
+  RUD2025000017302-D5366353-0A32-44C1-95E8-DCDE9EF5755C.xml
 frontend/
   .env.local
   .env.local.example
@@ -104,13 +107,14 @@ frontend/
         UserManagementClient.tsx ← page.tsx
         UserModal.tsx ← UserManagementClient.tsx
     lib/
-      barcode.ts ← RecipeFormPDF.tsx
+      barcode.ts ← recipePdf.ts, RecipeDetailsView.tsx, RecipeFormPDF.tsx
       email.ts ← recipes.ts, reports.ts, test-email.ts
       reports.ts ← reports.ts
       supabase/
         client.ts
         middleware.ts
         server.ts ← email.ts, reports.ts
+      telegram.ts ← recipes.ts
       utils.ts ← Sidebar.tsx, Button.tsx, Input.tsx +2 more
       validations/
         auth.ts ← auth.ts
@@ -121,20 +125,18 @@ frontend/
       index.ts ← read-pdf-ocr.py
     utils/
       recipePdf.ts ← RecipeDetailsView.tsx
-  supabase/
-    migrations/ [4 files: 4 .sql]
   tailwind.config.ts
   test-email-script.mjs
   tsconfig.json
   tsconfig.tsbuildinfo
 supabase/
-  migrations/ [10 files: 9 .sql, 1 .bak]
+  migrations/ [14 files: 13 .sql, 1 .bak]
 ```
 
 
 ## File Dependencies
 
-> Scanned 65 files
+> Scanned 66 files
 
 ### High-Impact Files
 

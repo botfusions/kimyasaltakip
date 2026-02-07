@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
 import { sendEmail } from '@/lib/email';
+import { sendTelegramAlert } from '@/lib/telegram';
 
 /**
  * Check if current user has recipe management access (admin or lab)
@@ -126,6 +127,21 @@ export async function createRecipe(formData: FormData) {
     const processWashCount = formData.get('process_wash_count') as string;
     const cauldronQuantity = formData.get('cauldron_quantity') as string;
 
+    // Additional fields from RecipeEditor
+    const orderCode = formData.get('order_code') as string || null;
+    const processInfo = formData.get('process_info') as string || null;
+    const totalWeight = formData.get('total_weight') as string;
+    const machineCode = formData.get('machine_code') as string || null;
+    const colorName = formData.get('color_name') as string || null;
+    const workOrderDate = formData.get('work_order_date') as string || null;
+    const bathVolume = formData.get('bath_volume') as string;
+    const sipNo = formData.get('sip_no') as string || null;
+    const customerRefNo = formData.get('customer_ref_no') as string || null;
+    const customerName = formData.get('customer_name') as string || null;
+    const customerSipMt = formData.get('customer_sip_mt') as string;
+    const customerOrderNo = formData.get('customer_order_no') as string || null;
+    const yarnType = formData.get('yarn_type') as string || null;
+
     if (!productId || !versionCode || !itemsJson) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
@@ -159,9 +175,23 @@ export async function createRecipe(formData: FormData) {
             start_date: startDate,
             finish_date: finishDate,
             batch_ratio: batchRatio ? parseFloat(batchRatio) : null,
-
             process_wash_count: processWashCount ? parseInt(processWashCount, 10) : null,
             cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
+
+            // Additional fields
+            order_code: orderCode,
+            process_info: processInfo,
+            total_weight: totalWeight ? parseFloat(totalWeight) : null,
+            machine_code: machineCode,
+            color_name: colorName,
+            work_order_date: workOrderDate,
+            bath_volume: bathVolume ? parseFloat(bathVolume) : null,
+            sip_no: sipNo,
+            customer_ref_no: customerRefNo,
+            customer_name: customerName,
+            customer_sip_mt: customerSipMt ? parseFloat(customerSipMt) : null,
+            customer_order_no: customerOrderNo,
+            yarn_type: yarnType,
         })
         .select()
         .single();
@@ -170,6 +200,7 @@ export async function createRecipe(formData: FormData) {
         if (recipeError.code === '23505') {
             return { error: 'Bu versiyon kodu zaten kullanılıyor' };
         }
+        await sendTelegramAlert(`Reçete oluşturma hatası (DB Insert)`, { error: recipeError, user: currentUser.id });
         return { error: 'Reçete oluşturulurken hata oluştu' };
     }
 
@@ -190,6 +221,7 @@ export async function createRecipe(formData: FormData) {
     if (itemsError) {
         // Rollback recipe if items insertion fails
         await supabase.from('recipes').delete().eq('id', recipe.id);
+        await sendTelegramAlert(`Reçete malzeme ekleme hatası`, { error: itemsError, user: currentUser.id });
         return { error: 'Malzemeler eklenirken hata oluştu' };
     }
 
@@ -249,6 +281,21 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
     const processWashCount = formData.get('process_wash_count') as string;
     const cauldronQuantity = formData.get('cauldron_quantity') as string;
 
+    // Additional fields from RecipeEditor
+    const orderCode = formData.get('order_code') as string || null;
+    const processInfo = formData.get('process_info') as string || null;
+    const totalWeight = formData.get('total_weight') as string;
+    const machineCode = formData.get('machine_code') as string || null;
+    const colorName = formData.get('color_name') as string || null;
+    const workOrderDate = formData.get('work_order_date') as string || null;
+    const bathVolume = formData.get('bath_volume') as string;
+    const sipNo = formData.get('sip_no') as string || null;
+    const customerRefNo = formData.get('customer_ref_no') as string || null;
+    const customerName = formData.get('customer_name') as string || null;
+    const customerSipMt = formData.get('customer_sip_mt') as string;
+    const customerOrderNo = formData.get('customer_order_no') as string || null;
+    const yarnType = formData.get('yarn_type') as string || null;
+
     if (!versionCode || !itemsJson) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
@@ -274,9 +321,23 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
             start_date: startDate,
             finish_date: finishDate,
             batch_ratio: batchRatio ? parseFloat(batchRatio) : null,
-
             process_wash_count: processWashCount ? parseInt(processWashCount, 10) : null,
             cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
+
+            // Additional fields
+            order_code: orderCode,
+            process_info: processInfo,
+            total_weight: totalWeight ? parseFloat(totalWeight) : null,
+            machine_code: machineCode,
+            color_name: colorName,
+            work_order_date: workOrderDate,
+            bath_volume: bathVolume ? parseFloat(bathVolume) : null,
+            sip_no: sipNo,
+            customer_ref_no: customerRefNo,
+            customer_name: customerName,
+            customer_sip_mt: customerSipMt ? parseFloat(customerSipMt) : null,
+            customer_order_no: customerOrderNo,
+            yarn_type: yarnType,
         })
         .eq('id', recipeId)
         .select()
@@ -286,6 +347,7 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
         if (recipeError.code === '23505') {
             return { error: 'Bu versiyon kodu zaten kullanılıyor' };
         }
+        await sendTelegramAlert(`Reçete güncelleme hatası`, { error: recipeError, user: currentUser.id });
         return { error: 'Reçete güncellenirken hata oluştu' };
     }
 
@@ -378,6 +440,7 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
         .eq('id', recipeId);
 
     if (updateError) {
+        await sendTelegramAlert(`Reçete onaylama hatası`, { error: updateError, user: currentUser.id });
         return { error: 'Reçete onaylanırken hata oluştu' };
     }
 

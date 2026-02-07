@@ -19,6 +19,7 @@
     "axios": "^1.6.5",
     "clsx": "^2.1.1",
     "date-fns": "^3.0.6",
+    "fast-xml-parser": "^5.3.4",
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",

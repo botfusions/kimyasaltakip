@@ -35,10 +35,6 @@ export async function getMaterials(filters?: {
         .order('name', { ascending: true });
 
     // Apply filters
-    if (filters?.type) {
-        query = query.eq('type', filters.type);
-    }
-
     if (filters?.is_active !== undefined) {
         query = query.eq('is_active', filters.is_active);
     }
@@ -88,17 +84,17 @@ export async function createMaterial(formData: FormData) {
     const materialData = {
         code: formData.get('code') as string,
         name: formData.get('name') as string,
-        type: formData.get('type') as string,
+        description: formData.get('description') as string || null,
         unit: formData.get('unit') as string,
+        category: formData.get('category') as string || null,
+        critical_level: parseFloat(formData.get('critical_level') as string) || 0,
+        supplier_info: formData.get('supplier_info') as string || null,
         safety_info: formData.get('safety_info') as string || null,
-        storage_conditions: formData.get('storage_conditions') as string || null,
-        min_stock: parseFloat(formData.get('min_stock') as string) || null,
-        max_stock: parseFloat(formData.get('max_stock') as string) || null,
         is_active: formData.get('is_active') === 'true',
     };
 
     // Validate required fields
-    if (!materialData.code || !materialData.name || !materialData.type || !materialData.unit) {
+    if (!materialData.code || !materialData.name || !materialData.unit) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
 
@@ -144,16 +140,16 @@ export async function updateMaterial(materialId: string, formData: FormData) {
     const materialData = {
         code: formData.get('code') as string,
         name: formData.get('name') as string,
-        type: formData.get('type') as string,
+        description: formData.get('description') as string || null,
         unit: formData.get('unit') as string,
+        category: formData.get('category') as string || null,
+        critical_level: parseFloat(formData.get('critical_level') as string) || 0,
+        supplier_info: formData.get('supplier_info') as string || null,
         safety_info: formData.get('safety_info') as string || null,
-        storage_conditions: formData.get('storage_conditions') as string || null,
-        min_stock: parseFloat(formData.get('min_stock') as string) || null,
-        max_stock: parseFloat(formData.get('max_stock') as string) || null,
         is_active: formData.get('is_active') === 'true',
     };
 
-    if (!materialData.code || !materialData.name || !materialData.type || !materialData.unit) {
+    if (!materialData.code || !materialData.name || !materialData.unit) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
 
