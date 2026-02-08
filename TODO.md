@@ -1,7 +1,7 @@
 # 📋 TODO LİSTESİ
 
-> **Son Güncelleme:** 8 Şubat 2026 - 20:30
-> **Durum:** %75 Tamamlandı ✨ (Hedef: %100)
+> **Son Güncelleme:** 8 Şubat 2026 - 22:00
+> **Durum:** %76 Tamamlandı ✨ (Hedef: %100)
 
 ---
 
@@ -525,10 +525,16 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ StockManagementClient import hatası düzeltildi
 - ✅ Kritik stok uyarıları çalışıyor
 
-**3. Dark Mode Başlatıldı 🌓**
+**3. Dark Mode Tamamlandı 🌓**
 - ✅ Tailwind config güncellendi (darkMode: 'class')
 - ✅ next-themes paketi kuruldu
 - ✅ ThemeProvider component oluşturuldu
+- ✅ ThemeToggle component oluşturuldu (☀️/🌙)
+- ✅ Header'a theme toggle butonu eklendi
+- ✅ Root layout'a ThemeProvider entegre edildi
+- ✅ Dashboard page dark mode class'ları eklendi
+- ✅ System theme detection aktif
+- ✅ Tüm component'ler dark mode destekli
 
 **4. Dokümantasyon ✅**
 - ✅ README.md güncellendi (yeni özellikler eklendi)
