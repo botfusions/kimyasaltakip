@@ -20,7 +20,7 @@
 
 > **Legend:** `file.ts <- A.tsx, B.tsx` = This file is **imported by** A.tsx and B.tsx.
 > Directories with `[N files: ...]` are summarized to reduce size.
-> [STATS] Showing 84 files. 2 dirs summarized, 4 dirs excluded (node_modules, etc.)
+> [STATS] Showing 85 files. 2 dirs summarized, 4 dirs excluded (node_modules, etc.)
 
 
 ```
@@ -92,6 +92,7 @@ frontend/
         page.tsx
       page.tsx
     components/
+      ThemeProvider.tsx
       dashboard/
         Header.tsx ← layout.tsx
         Sidebar.tsx ← layout.tsx
@@ -150,13 +151,13 @@ frontend/
   tsconfig.json
   tsconfig.tsbuildinfo
 supabase/
-  migrations/ [15 files: 14 .sql, 1 .bak]
+  migrations/ [16 files: 15 .sql, 1 .bak]
 ```
 
 
 ## File Dependencies
 
-> Scanned 77 files
+> Scanned 78 files
 
 ### API Endpoints Used
 
