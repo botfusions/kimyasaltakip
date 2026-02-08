@@ -23,6 +23,10 @@ export const createUserSchema = z.object({
         .regex(/^\+?[0-9\s-()]+$/, 'Geçerli bir telefon numarası giriniz')
         .optional()
         .or(z.literal('')),
+    password: z
+        .string()
+        .min(8, 'Şifre en az 8 karakter olmalıdır')
+        .max(100, 'Şifre en fazla 100 karakter olabilir'),
     is_active: z.boolean().default(true),
 });
 

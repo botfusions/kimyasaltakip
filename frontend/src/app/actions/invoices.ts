@@ -315,3 +315,86 @@ export async function getInvoiceHistory(limit = 50) {
         return { data: [], error: error.message };
     }
 }
+
+/**
+ * Delete invoice import and rollback stock movements
+ * Reverses all stock changes made by this invoice
+ */
+export async function deleteInvoiceImport(invoiceNumber: string) {
+    try {
+        const currentUser = await getCurrentUser();
+
+        if (!currentUser || !['admin', 'warehouse'].includes(currentUser.role)) {
+            return { success: false, error: 'Bu işlem için yetkiniz yok' };
+        }
+
+        const supabase = await createClient();
+
+        // 1. Get all stock movements for this invoice
+        const { data: movements, error: fetchError } = await supabase
+            .from('stock_movements')
+            .select('*')
+            .eq('reference_type', 'invoice')
+            .eq('reference_id', invoiceNumber);
+
+        if (fetchError) {
+            return { success: false, error: 'Fatura hareketleri yüklenemedi: ' + fetchError.message };
+        }
+
+        if (!movements || movements.length === 0) {
+            return { success: false, error: 'Bu fatura numarasına ait hareket bulunamadı' };
+        }
+
+        // 2. Rollback each stock movement
+        for (const movement of movements) {
+            // Get current stock
+            const { data: currentStock } = await supabase
+                .from('stock')
+                .select('quantity')
+                .eq('material_id', movement.material_id)
+                .single();
+
+            if (currentStock) {
+                // Reverse the movement (subtract if it was 'in')
+                const currentQuantity = currentStock.quantity || 0;
+                const rollbackQuantity =
+                    movement.movement_type === 'in'
+                        ? currentQuantity - (movement.quantity || 0) // Reverse IN
+                        : currentQuantity + (movement.quantity || 0); // Reverse OUT
+
+                // Update stock
+                await supabase
+                    .from('stock')
+                    .update({
+                        quantity: Math.max(0, rollbackQuantity), // Never go negative
+                        last_updated: new Date().toISOString(),
+                        updated_by: currentUser.id,
+                    })
+                    .eq('material_id', movement.material_id);
+            }
+        }
+
+        // 3. Delete stock movements
+        const { error: deleteError } = await supabase
+            .from('stock_movements')
+            .delete()
+            .eq('reference_type', 'invoice')
+            .eq('reference_id', invoiceNumber);
+
+        if (deleteError) {
+            return { success: false, error: 'Hareketler silinirken hata: ' + deleteError.message };
+        }
+
+        revalidatePath('/dashboard/stock');
+        revalidatePath('/dashboard/invoices');
+
+        return {
+            success: true,
+            deletedCount: movements.length,
+            message: `${invoiceNumber} faturası ve ${movements.length} hareket başarıyla silindi`,
+        };
+    } catch (error: any) {
+        console.error('Delete invoice error:', error);
+        return { success: false, error: error.message || 'Fatura silinemedi' };
+    }
+}

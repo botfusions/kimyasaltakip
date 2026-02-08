@@ -31,6 +31,8 @@ export default function UserModal({ user, onClose }: Props) {
         name: user?.name || '',
         role: user?.role || 'lab',
         phone: user?.phone || '',
+        password: '',
+        confirmPassword: '',
         is_active: user?.is_active ?? true,
     });
 
@@ -44,12 +46,36 @@ export default function UserModal({ user, onClose }: Props) {
         setError('');
 
         try {
+            // Validate password for new users
+            if (!isEditing) {
+                if (!formData.password) {
+                    setError('Şifre zorunludur');
+                    setIsLoading(false);
+                    return;
+                }
+                if (formData.password.length < 8) {
+                    setError('Şifre en az 8 karakter olmalıdır');
+                    setIsLoading(false);
+                    return;
+                }
+                if (formData.password !== formData.confirmPassword) {
+                    setError('Şifreler eşleşmiyor');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
             const formDataObj = new FormData();
             formDataObj.append('email', formData.email);
             formDataObj.append('name', formData.name);
             formDataObj.append('role', formData.role);
             formDataObj.append('phone', formData.phone);
             formDataObj.append('is_active', formData.is_active.toString());
+
+            // Add password only for new users
+            if (!isEditing) {
+                formDataObj.append('password', formData.password);
+            }
 
             const result = isEditing
                 ? await updateUser(user.id, formDataObj)
@@ -109,6 +135,31 @@ export default function UserModal({ user, onClose }: Props) {
                     placeholder="ornek@email.com"
                     required
                 />
+
+                {/* Password - Only for new users */}
+                {!isEditing && (
+                    <>
+                        <Input
+                            label="Şifre"
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="En az 8 karakter"
+                            required
+                            helperText="Güçlü bir şifre seçin (en az 8 karakter)"
+                        />
+
+                        <Input
+                            label="Şifre Tekrar"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            placeholder="Şifreyi tekrar girin"
+                            required
+                            helperText="Şifrenizi doğrulamak için tekrar girin"
+                        />
+                    </>
+                )}
 
                 {/* Phone */}
                 <Input

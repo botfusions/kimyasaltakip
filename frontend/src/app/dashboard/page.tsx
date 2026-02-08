@@ -38,19 +38,19 @@ export default async function DashboardPage() {
                     <div className="space-y-2">
                         {criticalStock.map((item: any) => (
                             <div
-                                key={item.id}
+                                key={item.stock_id}
                                 className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded"
                             >
                                 <div>
-                                    <p className="font-medium text-gray-800">{item.name}</p>
-                                    <p className="text-sm text-gray-600">Kod: {item.code}</p>
+                                    <p className="font-medium text-gray-800">{item.material_name}</p>
+                                    <p className="text-sm text-gray-600">Kod: {item.material_code}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-red-600">
-                                        {item.stock_quantity} {item.unit}
+                                        {item.current_quantity} {item.unit}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                        Min: {item.min_stock_level} {item.unit}
+                                        Min: {item.critical_level} {item.unit}
                                     </p>
                                 </div>
                             </div>

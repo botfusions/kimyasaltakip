@@ -15,7 +15,7 @@ export async function getCriticalStock() {
         const { data, error } = await supabase
             .from('view_critical_stock')
             .select('*')
-            .order('stock_quantity', { ascending: true });
+            .order('difference', { ascending: true });
 
         if (error) {
             console.error('Kritik stok sorgusu hatası:', error);

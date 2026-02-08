@@ -81,6 +81,7 @@ export async function createUser(formData: FormData) {
         name: formData.get('name') as string,
         role: formData.get('role') as string,
         phone: formData.get('phone') as string || undefined,
+        password: formData.get('password') as string,
         is_active: formData.get('is_active') === 'true',
     };
 
@@ -93,6 +94,31 @@ export async function createUser(formData: FormData) {
     }
 
     const supabase = await createClient();
+
+    // 1. Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: validation.data.email,
+        password: validation.data.password,
+        options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+            data: {
+                name: validation.data.name,
+                role: validation.data.role,
+            },
+        },
+    });
+
+    if (authError) {
+        // Handle specific auth errors
+        if (authError.message.includes('already registered')) {
+            return { error: 'Bu email adresi zaten kullanılıyor' };
+        }
+        return { error: `Kullanıcı kaydı oluşturulurken hata: ${authError.message}` };
+    }
+
+    if (!authData.user) {
+        return { error: 'Kullanıcı kaydı oluşturulamadı' };
+    }
 
     // Generate signature ID for lab users
     let signatureId: string | null = null;
@@ -119,12 +145,16 @@ export async function createUser(formData: FormData) {
         }
     }
 
-    // Insert user
+    // 2. Insert user profile into users table
     const { data, error } = await supabase
         .from('users')
         .insert({
-            ...validation.data,
+            id: authData.user.id, // Use Auth user ID
+            email: validation.data.email,
+            name: validation.data.name,
+            role: validation.data.role,
             phone: validation.data.phone || null,
+            is_active: validation.data.is_active,
             signature_id: signatureId,
             created_by: currentUser.id,
         })
@@ -132,10 +162,13 @@ export async function createUser(formData: FormData) {
         .single();
 
     if (error) {
+        // If user profile creation fails, we should ideally delete the auth user
+        // but Supabase doesn't allow that from client SDK
+        // Admin should manually clean up via Supabase dashboard if needed
         if (error.code === '23505') { // Unique violation
             return { error: 'Bu email adresi zaten kullanılıyor' };
         }
-        return { error: 'Kullanıcı oluşturulurken hata oluştu' };
+        return { error: 'Kullanıcı profili oluşturulurken hata oluştu' };
     }
 
     // Log audit
@@ -144,7 +177,7 @@ export async function createUser(formData: FormData) {
         record_id: data.id,
         action: 'INSERT',
         user_id: currentUser.id,
-        changes: { new: validation.data },
+        changes: { new: { ...validation.data, password: '[REDACTED]' } },
     });
 
     revalidatePath('/dashboard/users');

@@ -20,7 +20,7 @@
 
 > **Legend:** `file.ts <- A.tsx, B.tsx` = This file is **imported by** A.tsx and B.tsx.
 > Directories with `[N files: ...]` are summarized to reduce size.
-> [STATS] Showing 73 files. 2 dirs summarized, 4 dirs excluded (node_modules, etc.)
+> [STATS] Showing 84 files. 2 dirs summarized, 4 dirs excluded (node_modules, etc.)
 
 
 ```
@@ -40,18 +40,26 @@ frontend/
   src/
     app/
       actions/
-        auth.ts ← Header.tsx, layout.tsx, page.tsx +1 more
+        auth.ts ← Header.tsx, layout.tsx, page.tsx +5 more
         expert.ts ← ExpertConsultantClient.tsx
-        materials.ts ← MaterialModal.tsx, MaterialsManagementClient.tsx, RecipeEditor.tsx
+        invoices.ts ← InvoiceImportClient.tsx, InvoiceListClient.tsx, page.tsx
+        materials.ts ← MaterialModal.tsx, MaterialsManagementClient.tsx, RecipeEditor.tsx +1 more
         products.ts ← ProductModal.tsx, ProductsManagementClient.tsx, page.tsx +1 more
         recipes.ts ← RecipeDetailsView.tsx, RecipeEditor.tsx, RecipeManagementClient.tsx +3 more
         reports.ts
         settings.ts ← SettingsClient.tsx, page.tsx
-        stock.ts ← page.tsx
+        stock.ts ← StockMovementForm.tsx, page.tsx, page.tsx
         test-email.ts ← page.tsx
         users.ts ← UserManagementClient.tsx, UserModal.tsx, page.tsx
+      api/
+        ocr/
+          route.ts
       dashboard/
         expert/
+          page.tsx
+        invoices/
+          import/
+            page.tsx
           page.tsx
         layout.tsx
         materials/
@@ -71,6 +79,11 @@ frontend/
           page.tsx
           test-email/
             page.tsx
+        stock/
+          movement/
+            new/
+              page.tsx
+          page.tsx
         users/
           page.tsx
       globals.css
@@ -84,6 +97,9 @@ frontend/
         Sidebar.tsx ← layout.tsx
       expert/
         ExpertConsultantClient.tsx ← page.tsx
+      invoices/
+        InvoiceImportClient.tsx ← page.tsx
+        InvoiceListClient.tsx ← page.tsx
       materials/
         MaterialModal.tsx ← MaterialsManagementClient.tsx
         MaterialsManagementClient.tsx ← page.tsx
@@ -98,9 +114,12 @@ frontend/
         SignatureVerificationModal.tsx ← RecipeDetailsView.tsx, RecipeManagementClient.tsx
       settings/
         SettingsClient.tsx
+      stock/
+        StockManagementClient.tsx ← page.tsx
+        StockMovementForm.tsx ← page.tsx
       ui/
-        Button.tsx ← Header.tsx, ExpertConsultantClient.tsx, MaterialModal.tsx +11 more
-        Input.tsx ← MaterialModal.tsx, MaterialsManagementClient.tsx, ProductModal.tsx +8 more
+        Button.tsx ← Header.tsx, ExpertConsultantClient.tsx, InvoiceImportClient.tsx +15 more
+        Input.tsx ← MaterialModal.tsx, MaterialsManagementClient.tsx, ProductModal.tsx +9 more
         Modal.tsx ← MaterialModal.tsx, ProductModal.tsx, SignatureVerificationModal.tsx +1 more
         Table.tsx ← UserManagementClient.tsx
       users/
@@ -109,6 +128,7 @@ frontend/
     lib/
       barcode.ts ← recipePdf.ts, RecipeDetailsView.tsx, RecipeFormPDF.tsx
       email.ts ← recipes.ts, reports.ts, test-email.ts
+      invoice-parser.ts ← InvoiceImportClient.tsx, invoices.ts
       reports.ts ← reports.ts
       supabase/
         client.ts
@@ -130,13 +150,19 @@ frontend/
   tsconfig.json
   tsconfig.tsbuildinfo
 supabase/
-  migrations/ [14 files: 13 .sql, 1 .bak]
+  migrations/ [15 files: 14 .sql, 1 .bak]
 ```
 
 
 ## File Dependencies
 
-> Scanned 66 files
+> Scanned 77 files
+
+### API Endpoints Used
+
+```
+/api/ocr
+```
 
 ### High-Impact Files
 
@@ -144,11 +170,11 @@ supabase/
 
 | File | Imported by |
 |------|-------------|
-| `src/components/ui/Button` | 14 files |
-| `src/components/ui/Input` | 11 files |
-| `src/lib/supabase/server` | 8 files |
-| `src/app/actions/recipes` | 6 files |
-| `frontend/src/app/actions/auth` | 6 files |
+| `src/components/ui/Button` | 18 files |
+| `src/components/ui/Input` | 12 files |
+| `src/lib/supabase/server` | 9 files |
+| `src/app/actions/auth` | 8 files |
+| `frontend/src/app/actions/auth` | 8 files |
 
 
 ---
