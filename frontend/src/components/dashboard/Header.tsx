@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { signOut } from '@/app/actions/auth';
 import { Button } from '@/components/ui/Button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface User {
     id: string;
@@ -48,8 +49,12 @@ export default function DashboardHeader({ user }: HeaderProps) {
         <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
             <div className="flex-1"></div>
 
-            {/* User Menu */}
-            <div className="relative">
+            {/* Theme Toggle & User Menu */}
+            <div className="flex items-center gap-3">
+                <ThemeToggle />
+
+                {/* User Menu */}
+                <div className="relative">
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-3 py-2 transition-colors"
@@ -105,6 +110,7 @@ export default function DashboardHeader({ user }: HeaderProps) {
                         </div>
                     </>
                 )}
+                </div>
             </div>
         </header>
     );
