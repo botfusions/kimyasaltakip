@@ -657,6 +657,8 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - [x] **Invoice Number Support** - `stock_movements.reference_id` UUID'den TEXT tipine dönüştürüldü (Migration: `migration_fix_reference_id.sql`).
 - [x] **Data Visibility** - Stok verilerinin görünmesi için eksik RLS politikaları eklendi (`fix_stock_rls.sql`).
 - [x] **Data Import Script** - `scripts/import_data_via_api.js` ile fatura verileri (RUD2025...) başarıyla içeri aktarıldı.
+- [x] **New Modules Initialized** - Üretim ve Raporlama sayfaları (404 hatasını gidermek için) placeholder olarak oluşturuldu.
+- [x] **Project Cleanup** - Gereksiz dosyalar `archive` klasörüne taşındı, proje dizini temizlendi.
 
 ---
 
@@ -666,6 +668,6 @@ Bu proje özel lisans altındadır.
 
 ---
 
-**Son Güncelleme:** 11 Şubat 2026
-**Versiyon:** Phase 6 - Invoice Import & UI Polish
+**Son Güncelleme:** 11 Şubat 2026 (21:00)
+**Versiyon:** Phase 6.1 - Cleanup & Module Initialization
 **Geliştirici:** Kimyasal Takip Ekibi
