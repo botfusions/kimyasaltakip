@@ -650,13 +650,22 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 
 ---
 
+### ✅ INVOICE DATA IMPORT & UI REFINEMENTS (Phase 6 Tamamlandı! 🎉)
+> **11 Şubat 2026**
+
+- [x] **Dark Mode UI Fix** - Stok tablosundaki beyaz arka plan sorunu giderildi.
+- [x] **Invoice Number Support** - `stock_movements.reference_id` UUID'den TEXT tipine dönüştürüldü (Migration: `migration_fix_reference_id.sql`).
+- [x] **Data Visibility** - Stok verilerinin görünmesi için eksik RLS politikaları eklendi (`fix_stock_rls.sql`).
+- [x] **Data Import Script** - `scripts/import_data_via_api.js` ile fatura verileri (RUD2025...) başarıyla içeri aktarıldı.
+
+---
+
 ## 📄 Lisans
 
 Bu proje özel lisans altındadır.
 
 ---
 
-**Son Güncelleme:** 7 Şubat 2026
-**Versiyon:** Phase 5 - Stok Sistemi ve E-Fatura Entegrasyonu
-**Sonraki Milestone:** Production Deployment (1 hafta)
+**Son Güncelleme:** 11 Şubat 2026
+**Versiyon:** Phase 6 - Invoice Import & UI Polish
 **Geliştirici:** Kimyasal Takip Ekibi

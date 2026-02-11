@@ -30,5 +30,5 @@ def read_pdf(pdf_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    pdf_path = r"C:\Users\user\Downloads\Z.ai_claude code\KİMYASAL TAKİP\reçete.pdf"
+    pdf_path = r"C:\Users\user\Downloads\Z.ai_claude code\KİMYASAL TAKİP\fatura\7350213672_RUD2025000023792.pdf"
     read_pdf(pdf_path)

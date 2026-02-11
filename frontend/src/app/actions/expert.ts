@@ -3,6 +3,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getCurrentUser } from './auth';
 import { getSettingByKey } from './settings';
+import { createClient } from '@/lib/supabase/server';
 
 const KNOWLEDGE_BASE = {
     persona: "Sen, kimya endüstrisinde uzun yıllara dayanan deneyime sahip kıdemli bir üretim ve kalite kontrol uzmanısın. Özellikle tekstil kimyasalları, boyama süreçleri ve ISO standartları konusunda derinlemesine bilgiye sahipsin. Yanıtların her zaman teknik, kesin ve endüstri standartlarına uygun olmalı. Güvenlik uyarılarını her zaman en başta belirt.",
@@ -25,11 +26,35 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
             throw new Error('Gemini API anahtarı ayarlanmamış. Lütfen Admin panelinden "Ayarlar" sekmesine giderek anahtarı giriniz.');
         }
 
+
         const genAI = new GoogleGenerativeAI(apiKey);
+
+        // Search for relevant chemical data
+        let contextData = "";
+        try {
+            const searchTerm = prompt.slice(0, 50).replace(/[^a-zA-Z0-9\s-]/g, '').trim();
+            if (searchTerm.length >= 2) {
+                const supabase = await createClient();
+                const { data: searchResults } = await supabase
+                    .from('chemical_products')
+                    .select('product_name, manufacturer, category, general_function, type')
+                    .or(`product_name.ilike.%${searchTerm}%,manufacturer.ilike.%${searchTerm}%`)
+                    .limit(5);
+
+                if (searchResults && searchResults.length > 0) {
+                    contextData = "\n\nVERİTABANINDAN BULUNAN İLGİLİ KİMYASAL ÜRÜNLER:\n" + searchResults.map(r =>
+                        `- Ürün: ${r.product_name}\n  Üretici: ${r.manufacturer || 'Belirtilmemiş'}\n  Kategori: ${r.category || '-'}\n  Fonksiyon: ${r.general_function || '-'}\n  Tip: ${r.type || '-'}`
+                    ).join("\n\n");
+                }
+            }
+        } catch (searchError) {
+            console.error('Chemical search error:', searchError);
+            // Continue without context data if search fails
+        }
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-3-flash-preview',
-            systemInstruction: `${KNOWLEDGE_BASE.persona}\n\nKullanabileceğin teknik bilgi havuzu:\n${KNOWLEDGE_BASE.chemicals}\n\n${KNOWLEDGE_BASE.iso_standards}\n\n${KNOWLEDGE_BASE.production}\n\nYanıtlarını bu teknik verilere dayandır ve her zaman profesyonel teknik format kullan.`
+            systemInstruction: `${KNOWLEDGE_BASE.persona}\n\nKullanabileceğin teknik bilgi havuzu:\n${KNOWLEDGE_BASE.chemicals}\n\n${KNOWLEDGE_BASE.iso_standards}\n\n${KNOWLEDGE_BASE.production}${contextData}\n\nYanıtlarını bu teknik verilere dayandır ve her zaman profesyonel teknik format kullan.`
         });
 
         const chat = model.startChat({

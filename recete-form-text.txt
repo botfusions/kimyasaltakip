@@ -1,3 +1,82 @@
 
 --- Sayfa 1 ---
-
+SAYIN
+DENİZLİ RATEKS TEKSTİL SAN. VE TİC. AŞ.
+ORGANİZE SAN BÖL. VALİ MÜNİR GÜNEY CD. NO:8 
+20330 HONAZ/ DENİZLİ 
+Web Sitesi: 31.03.2019 onlinemut
+E­Posta: abagcioglu@goldstarteks.com
+Tel: 0258 371 34 35 Fax:  
+Vergi Dairesi: GÖKPINAR
+VKN: 2920608172
+TICARETSICILNO:
+MERSISNO:Özelleştirme No:TR1.2
+Senaryo: TICARIFATURA
+Fatura Tipi: SATIS
+Fatura No: RUD2025000023792
+Fatura Tarihi:17­12­2025 14:08
+İrsaliye No:  RDM2025000031918
+İrsaliye Tarihi:17­12­2025
+      Ödeme Koşulu: 90 GÜN
+      Genel Açıklamalar
+          # Yalnız DoksanBinÜçYüzYetmişBeş TL SeksenDört kuruş #
+      Kur Bilgisi: Euro: 50,2088 ­ Usd: 42,7085
+      Sevk Bilgileri: Irsaliye No: 'RDM2025000031918' 
+      Doksan Bin Üç Yüz Yetmiş Beş Türk Lirası Seksen Dört Kuruş
+      Mersis No: 0735021367200017
+“Sağlık, Veteriner, İlaç, Tarım, Gıda, Yem ile temas eden madde ve malzeme üretiminde kullanılamaz.Tekstil sanayii içindir." 
+BANKA BİLGİLERİ 
+BANKA BANKA ŞUBESİ IBAN NO (TL) IBAN NO (EURO) IBAN NO (USD)
+HALKBANK ORG.SAN.TİC./BURSA ŞB.TR60 0001 2009 6100 0010 1001 76TR21 0001 2009 6100 002P 0000 56TR92 0001 2009 6100 0053 0003 72
+ZİRAAT BANKASIBURSA TİCARİ MERKEZ TR52 0001 0020 4760 6679 9453 22TR95 0001 0020 4760 6679 9453 24TR25 0001 0020 4760 6679 9453 23
+GARANTİ BURSA TİCARİ TR48 0006 2001 6050 0006 2034 21TR04 0006 2001 6050 0009 0995 66TR93 0006 2001 6050 0009 0979 64
+AKBANK BURSA TİCARİ TR88 0004 6008 3888 8000 1124 38TR75 0004 6008 3803 6000 0004 08TR02 0004 6008 3800 1000 1591 79
+YAPI KREDİ BURSA FOMARA TR48 0006 7010 0000 0024 3300 35TR13 0006 7010 0000 0025 2556 57TR32 0006 7010 0000 0029 1054 39RUDOLF DURANER KİMYEVİ MADDELER TİC. ve SAN. A.Ş.
+SİYAH CAD. MİNARELİÇAVUŞ OSB MAH.  No:NO:18  
+16220 NİLÜFER/ BURSA 
+Tel: 2242428540 Fax: 2242422877 
+Web Sitesi: www.rudolf­duraner.com.tr
+E­Posta: enilk@rudolf­duraner.com.tr
+Vergi Dairesi: ERTUĞRULGAZİ 
+VKN: 7350213672
+e­FATURA
+ETTN:A46EFA71­24A3­4200­B638­BF4C79923489
+ 
+Sıra
+NoMalzeme/Hizmet
+KoduMalzeme/Hizmet
+AçıklamasıSatır
+AçıklamasıMiktarBirim Fiyatİskonto
+Oranıİskonto
+TutarıKDV OranıKDV TutarıDiğer
+VergilerVergi
+Muafiyet
+SebebiMalzeme/Hizmet
+Tutarı
+ 1 31098C  RUCOGEN PVN  1.000 KG  75,3132 TL    %20,00 15.062,64 TL  75.313,20 TL 
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+                         
+Malzeme/Hizmet Toplam Tutarı75.313,20 TL
+Toplam İskonto 0,00 TL
+Hesaplanan KDV(%20,00)15.062,64 TL
+Vergiler Dahil Toplam Tutar90.375,84  TL
+Ödenecek Tutar90.375,84  TL
