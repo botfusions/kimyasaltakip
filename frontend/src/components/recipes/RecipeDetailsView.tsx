@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import SignatureVerificationModal from './SignatureVerificationModal';
-import { rejectRecipeForRevision } from '@/app/actions/recipes';
+import { rejectRecipeForRevision, startProduction } from '@/app/actions/recipes';
 import { generateRecipePDF } from '@/utils/recipePdf';
 import { generateBarcodeDataURL } from '@/lib/barcode';
+import MrlsCheckModal from './MrlsCheckModal';
+import { Shield, Play } from 'lucide-react';
 
 interface RecipeItem {
     id: string;
@@ -53,19 +55,22 @@ interface Recipe {
 
 interface Props {
     recipe: Recipe;
+    currentUser: any;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     draft: { label: 'Taslak', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' },
-    pending: { label: 'Müşteri Bekliyor', color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' },
+    pending: { label: 'Onay Bekliyor', color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' },
     approved: { label: 'Onaylandı', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+    in_production: { label: 'Üretimde', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
     rejected: { label: 'Revize Gerekli', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' },
 };
 
-export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
+export default function RecipeDetailsView({ recipe: initialRecipe, currentUser }: Props) {
     const router = useRouter();
     const [recipe, setRecipe] = useState(initialRecipe);
     const [showSignatureModal, setShowSignatureModal] = useState(false);
+    const [showMrlsModal, setShowMrlsModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSignatureModalClose = (approved?: boolean) => {
@@ -88,6 +93,19 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
             window.location.reload();
         } else {
             alert(result.error || 'Bir hata oluştu');
+        }
+        setIsLoading(false);
+    };
+
+    const handleStartProduction = async () => {
+        if (!confirm('Bu reçeteyi üretime almak istediğinize emin misiniz?')) return;
+
+        setIsLoading(true);
+        const result = await startProduction(recipe.id);
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert(result.error || 'Üretim başlatılırken hata oluştu');
         }
         setIsLoading(false);
     };
@@ -151,14 +169,38 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
                             <img src={barcodeDataURL} alt="Barcode" className="h-12" />
                         </div>
                     )}
-                    {recipe.status !== 'approved' && (
+                    {/* Lab Actions: Draft state */
+                        (recipe.status === 'draft' || recipe.status === 'rejected') && (currentUser?.role === 'lab' || currentUser?.role === 'admin') && (
+                            <>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => router.push(`/dashboard/recipes/${recipe.id}/edit`)}
+                                    disabled={isLoading}
+                                >
+                                    Düzenle
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => setShowMrlsModal(true)}
+                                    disabled={isLoading}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                >
+                                    <Shield className="w-4 h-4 mr-2" />
+                                    MRLS Kontrolü ve Onaya Gönder
+                                </Button>
+                            </>
+                        )}
+
+                    {/* Manager Actions: Pending state */}
+                    {recipe.status === 'pending' && (currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
                         <>
                             <Button
                                 variant="secondary"
-                                onClick={() => router.push(`/dashboard/recipes/${recipe.id}/edit`)}
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={handleReject}
                                 disabled={isLoading}
                             >
-                                Düzenle
+                                Revize İste
                             </Button>
                             <Button
                                 variant="primary"
@@ -166,21 +208,26 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
                                 onClick={() => setShowSignatureModal(true)}
                                 disabled={isLoading}
                             >
-                                ✓ Onayla (Üretime Aç)
+                                ✓ Onayla (Dijital İmza)
                             </Button>
                         </>
                     )}
-                    {(recipe.status === 'draft' || recipe.status === 'pending') && (
+
+                    {/* Production Actions: Approved state */}
+                    {recipe.status === 'approved' && (currentUser?.role === 'production' || currentUser?.role === 'admin') && (
                         <Button
-                            variant="secondary"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={handleReject}
+                            variant="primary"
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={handleStartProduction}
                             disabled={isLoading}
                         >
-                            Revize İste
+                            <Play className="w-4 h-4 mr-2" />
+                            Kabul Et / Üretime Başla
                         </Button>
                     )}
-                    {recipe.status === 'approved' && (
+
+                    {/* Common Actions */}
+                    {(recipe.status === 'approved' || recipe.status === 'in_production') && (
                         <Button
                             variant="primary"
                             onClick={() => generateRecipePDF(recipe)}
@@ -309,6 +356,18 @@ export default function RecipeDetailsView({ recipe: initialRecipe }: Props) {
                 <SignatureVerificationModal
                     recipe={recipe}
                     onClose={handleSignatureModalClose}
+                />
+            )}
+
+            {/* MRLS Assessment Modal */}
+            {showMrlsModal && (
+                <MrlsCheckModal
+                    recipeId={recipe.id}
+                    onClose={() => setShowMrlsModal(false)}
+                    onSuccess={() => {
+                        setShowMrlsModal(false);
+                        window.location.reload();
+                    }}
                 />
             )}
         </div>

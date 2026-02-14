@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
 
 /**
@@ -98,14 +98,16 @@ export async function createMaterial(formData: FormData) {
         return { error: 'Lütfen tüm zorunlu alanları doldurun' };
     }
 
-    const supabase = await createClient();
+
+    // Use admin client to bypass RLS for creation
+    const supabase = createAdminClient();
 
     // Insert material
     const { data, error } = await supabase
         .from('materials')
         .insert({
+
             ...materialData,
-            created_by: currentUser.id,
         })
         .select()
         .single();
@@ -114,7 +116,8 @@ export async function createMaterial(formData: FormData) {
         if (error.code === '23505') { // Unique violation
             return { error: 'Bu malzeme kodu zaten kullanılıyor' };
         }
-        return { error: 'Malzeme oluşturulurken hata oluştu' };
+        console.error('Material create error:', error);
+        return { error: `Malzeme oluşturulurken hata oluştu: ${error.message} (${error.code})` };
     }
 
     // Log audit

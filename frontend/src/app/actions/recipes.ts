@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
 import { sendEmail } from '@/lib/email';
 import { sendTelegramAlert } from '@/lib/telegram';
+import { getSettingByKey } from '@/app/actions/settings';
 
 /**
  * Check if current user has recipe management access (admin or lab)
@@ -77,14 +78,14 @@ export async function getRecipeById(recipeId: string) {
         .from('recipes')
         .select(`
             *,
-            product:products(id, code, name, unit),
+            product:products(id, code, name),
             created_by_user:users!recipes_created_by_fkey(id, name, email),
             approved_by_user:users!recipes_approved_by_fkey(id, name, email, signature_id),
             recipe_items(
                 id,
                 material_id,
                 quantity,
-                percentage,
+                sort_order,
                 unit,
                 notes,
                 material:materials(id, code, name, unit, safety_info)
@@ -94,7 +95,8 @@ export async function getRecipeById(recipeId: string) {
         .single();
 
     if (error) {
-        return { error: 'Reçete bulunamadı' };
+        console.error('getRecipeById SUPABASE ERROR:', error);
+        return { error: `DEBUG: DB Error - ${error.message} (Code: ${error.code})` };
     }
 
     return { data };
@@ -515,5 +517,149 @@ export async function rejectRecipeForRevision(recipeId: string, reason: string) 
 
     revalidatePath('/dashboard/recipes');
 
+
+    return { success: true };
+}
+
+/**
+ * Submit recipe for approval (Lab user only)
+ * - Updates status to 'pending'
+ * - Sends email to Manager
+ */
+export async function submitForApproval(recipeId: string, complianceReport: string) {
+    const currentUser = await checkRecipeAccess();
+
+    if (currentUser.role !== 'lab') {
+        return { error: 'Sadece laboratuvar kullanıcıları onaya gönderebilir' };
+    }
+
+    const supabase = await createClient();
+
+    // 1. Get current notes to append report
+    const { data: currentRecipe } = await supabase
+        .from('recipes')
+        .select('notes, version_code, product:products(name, code)')
+        .eq('id', recipeId)
+        .single();
+
+    if (!currentRecipe) return { error: 'Reçete bulunamadı' };
+
+    // Parse report summary safely
+    let reportSummary = 'MRLS Kontrolü Başarılı';
+    try {
+        const parsed = JSON.parse(complianceReport);
+        if (parsed.summary) reportSummary = parsed.summary;
+    } catch (e) {
+        // use default
+    }
+
+    const newNotes = (currentRecipe.notes || '') + `\n\n[${new Date().toLocaleDateString()}] MRLS Raporu: ${reportSummary}`;
+
+    const { data: recipe, error: updateError } = await supabase
+        .from('recipes')
+        .update({
+            status: 'pending',
+            notes: newNotes,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', recipeId)
+        .select(`
+            *,
+            created_by_user:users!recipes_created_by_fkey(name)
+        `)
+        .single();
+
+    if (updateError) {
+        return { error: 'Durum güncellenemedi: ' + updateError.message };
+    }
+
+    // 2. Send Email to Manager
+    try {
+        const { data: managerEmailSetting } = await getSettingByKey('MANAGER_EMAIL');
+        const managerEmail = managerEmailSetting?.value || 'admin@example.com';
+
+        await sendEmail({
+            to: managerEmail,
+            subject: `📌 Yeni Reçete Onayı Bekliyor: ${(currentRecipe.product as any)?.name}`,
+            html: `
+                <div style="font-family: sans-serif;">
+                    <h2>Reçete Onay Talebi</h2>
+                    <p><strong>${recipe.created_by_user?.name || 'Kullanıcı'}</strong> tarafından oluşturulan reçete MRLS kontrolünden geçti ve onayınızı bekliyor.</p>
+                    
+                    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><strong>Ürün:</strong> ${(currentRecipe.product as any)?.name} (${(currentRecipe.product as any)?.code})</li>
+                            <li><strong>Versiyon:</strong> ${currentRecipe.version_code}</li>
+                            <li><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</li>
+                            <li><strong>MRLS Durumu:</strong> ✅ Uyumlu</li>
+                        </ul>
+                    </div>
+
+                    <p>Lütfen sisteme giriş yaparak reçeteyi inceleyin ve onaylayın.</p>
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/recipes/${recipe.id}" style="display:inline-block; padding:12px 24px; background-color: #2563eb; color:white; text-decoration:none; border-radius:6px; font-weight: bold;">Reçeteyi Görüntüle</a>
+                </div>
+            `
+        });
+    } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+    }
+
+    // Log audit
+    await supabase.from('audit_logs').insert({
+        table_name: 'recipes',
+        record_id: recipeId,
+        action: 'UPDATE',
+        user_id: currentUser.id,
+        changes: { old: { status: 'draft' }, new: { status: 'pending' }, note: 'Submitted for approval' }
+    });
+
+    revalidatePath('/dashboard/recipes');
+    return { success: true };
+}
+
+/**
+ * Start Production (Dyehouse/Production User)
+ * - Updates status to 'in_production'
+ * - Logs acceptance
+ */
+export async function startProduction(recipeId: string) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { error: 'Yetkisiz işlem' };
+
+    const supabase = await createClient();
+
+    const { data: recipe, error: fetchError } = await supabase
+        .from('recipes')
+        .select('status')
+        .eq('id', recipeId)
+        .single();
+
+    if (fetchError || !recipe) return { error: 'Reçete bulunamadı' };
+    if (recipe.status !== 'approved') return { error: 'Sadece onaylı reçeteler üretime alınabilir' };
+
+    const { error: updateError } = await supabase
+        .from('recipes')
+        .update({
+            status: 'in_production',
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', recipeId);
+
+    if (updateError) return { error: 'Üretim başlatılamadı' };
+
+    // Log audit
+    await supabase.from('audit_logs').insert({
+        table_name: 'recipes',
+        record_id: recipeId,
+        action: 'UPDATE',
+        user_id: currentUser.id,
+        changes: {
+            old: { status: 'approved' },
+            new: { status: 'in_production' },
+            note: 'Production started/accepted by user'
+        }
+    });
+
+    revalidatePath('/dashboard/recipes');
     return { success: true };
 }

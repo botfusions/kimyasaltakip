@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getMaterials, toggleMaterialStatus } from '@/app/actions/materials';
+import { getStockQuantityMap } from '@/app/actions/stock';
 import MaterialModal from './MaterialModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -30,6 +31,7 @@ const MATERIAL_TYPES: Record<string, string> = {
 export default function MaterialsManagementClient() {
     const [materials, setMaterials] = useState<Material[]>([]);
     const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
+    const [stockMap, setStockMap] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -40,7 +42,7 @@ export default function MaterialsManagementClient() {
     // Filter state
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
-    const [activeFilter, setActiveFilter] = useState<string>('all');
+    const [activeFilter, setActiveFilter] = useState<string>('active');
 
     // Load materials
     useEffect(() => {
@@ -79,12 +81,19 @@ export default function MaterialsManagementClient() {
         setIsLoading(true);
         setError('');
 
-        const result = await getMaterials();
+        const [materialsResult, stockResult] = await Promise.all([
+            getMaterials(),
+            getStockQuantityMap(),
+        ]);
 
-        if (result.error) {
-            setError(result.error);
+        if (materialsResult.error) {
+            setError(materialsResult.error);
         } else {
-            setMaterials(result.data || []);
+            setMaterials(materialsResult.data || []);
+        }
+
+        if (stockResult.data) {
+            setStockMap(stockResult.data);
         }
 
         setIsLoading(false);
@@ -208,7 +217,7 @@ export default function MaterialsManagementClient() {
                                         Birim
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                        Stok Limitleri
+                                        Stok Miktarı
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Durum
@@ -249,20 +258,26 @@ export default function MaterialsManagementClient() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                             {material.unit}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                            {material.min_stock !== null || material.max_stock !== null ? (
-                                                <span>
-                                                    {material.min_stock ?? '-'} / {material.max_stock ?? '-'}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div>
+                                                <span className={`font-semibold ${(stockMap[material.id] ?? 0) <= (material.min_stock ?? 0)
+                                                        ? 'text-red-600 dark:text-red-400'
+                                                        : 'text-gray-900 dark:text-white'
+                                                    }`}>
+                                                    {stockMap[material.id] ?? 0} {material.unit}
                                                 </span>
-                                            ) : (
-                                                <span className="text-gray-400">-</span>
-                                            )}
+                                                {(material.min_stock !== null || material.max_stock !== null) && (
+                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                        Min: {material.min_stock ?? '-'} / Max: {material.max_stock ?? '-'}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${material.is_active
-                                                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                                                     }`}
                                             >
                                                 {material.is_active ? 'Aktif' : 'Pasif'}

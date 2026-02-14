@@ -1,13 +1,16 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-    // Only redirect root path to login
+    // 1. Refresh session
+    const { response } = await updateSession(request);
+
+    // 2. Handle root redirect
     if (request.nextUrl.pathname === '/') {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Allow all other requests to pass through
-    return NextResponse.next();
+    return response;
 }
 
 export const config = {

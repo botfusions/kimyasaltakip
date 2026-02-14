@@ -66,7 +66,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
     const [totalWeight, setTotalWeight] = useState(''); // Toplam Kg
     const [machineCode, setMachineCode] = useState(''); // Kazan Kodu
 
-    const [planningDate, setPlanningDate] = useState(''); // Planlama Tarihi
+    const [planningDate] = useState(new Date().toISOString().slice(0, 10)); // Planlama Tarihi - otomatik bugünün tarihi
     const [colorName, setColorName] = useState(''); // Renk
     const [orderDate, setOrderDate] = useState(''); // İş Emri Tarihi
     const [bathVolume, setBathVolume] = useState(''); // Banyo Miktar
@@ -125,7 +125,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
             setRecipeNameNo(result.data.recipe_name_no || '');
             setColorCode(result.data.color_code || '');
             setYarnType(result.data.yarn_type || result.data.yarn_code || '');
-            setPlanningDate(result.data.planning_date || '');
+            // planningDate is always auto-set to today's date
             setStartDate(result.data.start_date || '');
             setFinishDate(result.data.finish_date || '');
             setBatchRatio(result.data.batch_ratio ? String(result.data.batch_ratio) : '');
@@ -153,7 +153,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
             material_name: '',
             material_code: '',
             unit: 'kg', // Default unit
-            quantity: '',
+            quantity: '10',
             percentage: '',
             notes: '',
         };
@@ -354,9 +354,11 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                         <div className="space-y-4">
                             <Input
                                 label="Planlama Tarihi"
-                                type="datetime-local"
+                                type="date"
                                 value={planningDate}
-                                onChange={(e) => setPlanningDate(e.target.value)}
+                                readOnly
+                                disabled
+                                className="bg-gray-100 cursor-not-allowed"
                             />
                             <Input
                                 label="Renk Adı"

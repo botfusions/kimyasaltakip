@@ -4,6 +4,8 @@ import RecipeEditor from '@/components/recipes/RecipeEditor';
 import { getRecipeById } from '@/app/actions/recipes';
 import { getProducts } from '@/app/actions/products';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
     title: 'Reçete Düzenle | Kimyasal Takip',
     description: 'Mevcut reçeteyi düzenle',
@@ -14,10 +16,21 @@ export default async function EditRecipePage({
 }: {
     params: { id: string };
 }) {
-    const { data: recipe, error } = await getRecipeById(params.id);
+    console.log('Edit Page - Params ID:', params.id);
+    const result = await getRecipeById(params.id);
+    console.log('Edit Page - Fetch Result:', result);
+    const { data: recipe, error } = result;
 
     if (error || !recipe) {
-        notFound();
+        return (
+            <div className="p-8 text-red-600">
+                <h1 className="text-2xl font-bold">Hata</h1>
+                <p>Reçete yüklenemedi.</p>
+                <div className="bg-gray-100 p-4 rounded mt-4 overflow-auto">
+                    <pre>{JSON.stringify({ error, paramsId: params.id }, null, 2)}</pre>
+                </div>
+            </div>
+        );
     }
 
     // Check if recipe can be edited

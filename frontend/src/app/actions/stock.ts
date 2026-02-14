@@ -227,6 +227,34 @@ export async function addStockMovement(formData: FormData) {
 }
 
 /**
+ * Tüm malzemelerin stok miktarını material_id -> quantity map olarak getir
+ */
+export async function getStockQuantityMap(): Promise<{ data: Record<string, number>; error: string | null }> {
+    try {
+        const supabase = await createClient();
+
+        const { data, error } = await supabase
+            .from('stock')
+            .select('material_id, quantity');
+
+        if (error) {
+            console.error('getStockQuantityMap error:', error);
+            return { data: {}, error: error.message };
+        }
+
+        const map: Record<string, number> = {};
+        for (const row of (data || [])) {
+            map[row.material_id] = Number(row.quantity) || 0;
+        }
+
+        return { data: map, error: null };
+    } catch (error: any) {
+        console.error('getStockQuantityMap exception:', error);
+        return { data: {}, error: error.message };
+    }
+}
+
+/**
  * Stok hareketlerini getir
  */
 export async function getStockMovements(materialId: string, limit = 50) {

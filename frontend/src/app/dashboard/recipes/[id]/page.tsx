@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import RecipeDetailsView from '@/components/recipes/RecipeDetailsView';
 import { getRecipeById } from '@/app/actions/recipes';
+import { getCurrentUser } from '@/app/actions/auth';
 
 // Generate dynamic metadata
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -26,5 +27,6 @@ export default async function RecipePage({
 
     // Transform generic Supabase response if needed, but getRecipeById returns detailed info.
     // Casting to any for component flexibility while maintaining type safety in the component itself.
-    return <RecipeDetailsView recipe={recipe as any} />;
+    const currentUser = await getCurrentUser();
+    return <RecipeDetailsView recipe={recipe as any} currentUser={currentUser} />;
 }

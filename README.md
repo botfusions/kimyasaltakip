@@ -18,7 +18,8 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - Tam CRUD işlemleri (Create, Read, Update, Delete)
 - **Kategori bazlı yönetim** (Hammadde, Boya, Kimyasal, vb.)
 - **Gerçek zamanlı stok takibi** ve otomatik düşüm
-- **Kritik seviye uyarıları** - Minimum stok limiti kontrolü
+- **Stok miktarı görüntüleme** - Malzeme listesinde anlık stok bilgisi
+- **Kritik seviye uyarıları** - Minimum stok limiti kontrolü (kırmızı vurgulama)
 - Güvenlik bilgileri (JSONB) ve tedarikçi bilgileri
 - Gelişmiş arama ve filtreleme
 - Birim yönetimi (kg, g, l, ml, piece)
@@ -39,6 +40,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - **Otomatik yüzde hesaplama** - Toplam %100 kontrolü
 - **Miktar ve oran doğrulama**
 - **Versiyon kodu yönetimi** - Her reçete değişikliği izlenebilir
+- **Otomatik planlama tarihi** - Bugünün tarihi otomatik atanır (salt okunur)
 
 #### Signature ID İle Onay Sistemi
 - Lab kullanıcıları **PIN** ile onaylar
@@ -588,9 +590,9 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 
 ## 📊 Mevcut Durum
 
-> **Genel Tamamlanma:** %70 🚀
-> **Son Güncelleme:** 7 Şubat 2026
-> **Phase:** 5 - Kritik Düzeltmeler ve Stok Sistemi Tamamlandı
+> **Genel Tamamlanma:** %72 🚀
+> **Son Güncelleme:** 13 Şubat 2026
+> **Phase:** 6.2 - Reçete & Malzeme İyileştirmeleri
 
 ### Modül Bazlı Tamamlanma
 | Modül | Tamamlanma | Durum |
@@ -607,12 +609,12 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 | **Üretim Takibi** | %50 | 🚧 Geliştirilmekte |
 | **Raporlama** | %20 | 🚧 Temel Seviye |
 
-### Son Eklenenler (7 Şubat 2026)
-- ✅ **Manuel Stok Giriş Formu** - Elle stok giriş/çıkış/düzeltme formu eklendi
-- ✅ **Stok Yönetimi Sistemi** - Tam özellikli dashboard ve hareket yönetimi
-- ✅ **E-Fatura OCR** - XML, PDF, JPEG formatlarında otomatik içe aktarma
-- ✅ **Database Düzeltmeleri** - Tüm kritik şema-kod uyumsuzlukları giderildi
-- ✅ **Action Files** - recipes.ts, products.ts, materials.ts, stock.ts güncellendi
+### Son Eklenenler (13 Şubat 2026)
+- ✅ **Reçete Düzenleme 404 Hatası Giderildi** - Middleware session refresh, DB şema düzeltmeleri
+- ✅ **Planlama Tarihi Otomasyonu** - Reçetede bugünün tarihi otomatik, salt okunur
+- ✅ **Malzeme Stok Miktarı Gösterimi** - Gerçek stok miktarı sütunu eklendi (0 gösterim, kırmızı kritik uyarı)
+- ✅ **Pasif Malzeme Filtreleme** - Varsayılan olarak sadece aktif malzemeler gösteriliyor
+- ✅ **getStockQuantityMap()** - Yeni server action: tüm malzemelerin stok miktarını map olarak döndürür
 
 **Detaylı Analiz ve Yol Haritası:**
 - 📄 [Kapsamlı Analiz ve Yol Haritası](docs/ANALIZ_VE_YOL_HARITASI.md)
@@ -659,6 +661,15 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - [x] **Data Import Script** - `scripts/import_data_via_api.js` ile fatura verileri (RUD2025...) başarıyla içeri aktarıldı.
 - [x] **New Modules Initialized** - Üretim ve Raporlama sayfaları (404 hatasını gidermek için) placeholder olarak oluşturuldu.
 - [x] **Project Cleanup** - Gereksiz dosyalar `archive` klasörüne taşındı, proje dizini temizlendi.
+---
+
+### ✅ REÇETE & MALZEME İYİLEŞTİRMELERİ (Phase 6.2 Tamamlandı! 🎉)
+> **13 Şubat 2026**
+
+- [x] **Reçete Düzenleme 404 Hatası** - Middleware'e Supabase session refresh eklendi, `getRecipeById` şema hataları düzeltildi (`products.unit`, `recipe_items.percentage` kaldırıldı).
+- [x] **Planlama Tarihi Otomasyonu** - `RecipeEditor.tsx`'de planlama tarihi otomatik bugün olarak ayarlandı (readOnly + disabled).
+- [x] **Malzeme Stok Miktarı** - `MaterialsManagementClient.tsx`'de "Stok Limitleri" sütunu "Stok Miktarı" olarak değiştirildi; `getStockQuantityMap()` ile `stock` tablosundan gerçek miktar çekiliyor.
+- [x] **Pasif Malzeme Gizleme** - Varsayılan aktif filtre `'active'` olarak ayarlandı, silinmiş/pasif malzemeler otomatik gizleniyor.
 
 ---
 
@@ -668,6 +679,6 @@ Bu proje özel lisans altındadır.
 
 ---
 
-**Son Güncelleme:** 11 Şubat 2026 (21:00)
-**Versiyon:** Phase 6.1 - Cleanup & Module Initialization
+**Son Güncelleme:** 13 Şubat 2026 (22:30)
+**Versiyon:** Phase 6.2 - Reçete & Malzeme İyileştirmeleri
 **Geliştirici:** Kimyasal Takip Ekibi
