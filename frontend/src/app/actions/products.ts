@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
+import { parseProductFormData, formatZodErrors } from '@/lib/validations';
 
 /**
  * Check if current user has products management access (admin or lab)
@@ -81,18 +82,17 @@ export async function getProductById(productId: string) {
 export async function createProduct(formData: FormData) {
     const currentUser = await checkProductsAccess();
 
-    const productData = {
-        code: formData.get('code') as string,
-        name: formData.get('name') as string,
-        description: formData.get('description') as string || null,
-        base_color: formData.get('base_color') as string || null,
-        is_active: formData.get('is_active') === 'true',
-    };
-
-    // Validate required fields
-    if (!productData.code || !productData.name) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+    // Validate with Zod schema
+    const validation = parseProductFormData(formData);
+    if (!validation.success) {
+        return { error: formatZodErrors(validation.error) };
     }
+
+    const productData = {
+        ...validation.data,
+        description: validation.data.description || null,
+        base_color: validation.data.base_color || null,
+    };
 
     const supabase = await createClient();
 
@@ -133,17 +133,17 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(productId: string, formData: FormData) {
     const currentUser = await checkProductsAccess();
 
-    const productData = {
-        code: formData.get('code') as string,
-        name: formData.get('name') as string,
-        description: formData.get('description') as string || null,
-        base_color: formData.get('base_color') as string || null,
-        is_active: formData.get('is_active') === 'true',
-    };
-
-    if (!productData.code || !productData.name) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+    // Validate with Zod schema
+    const validation = parseProductFormData(formData);
+    if (!validation.success) {
+        return { error: formatZodErrors(validation.error) };
     }
+
+    const productData = {
+        ...validation.data,
+        description: validation.data.description || null,
+        base_color: validation.data.base_color || null,
+    };
 
     const supabase = await createClient();
 

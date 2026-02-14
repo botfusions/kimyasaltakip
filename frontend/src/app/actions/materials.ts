@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
+import { parseMaterialFormData, formatZodErrors } from '@/lib/validations';
 
 /**
  * Check if current user has materials management access (admin or lab)
@@ -81,22 +82,19 @@ export async function getMaterialById(materialId: string) {
 export async function createMaterial(formData: FormData) {
     const currentUser = await checkMaterialsAccess();
 
-    const materialData = {
-        code: formData.get('code') as string,
-        name: formData.get('name') as string,
-        description: formData.get('description') as string || null,
-        unit: formData.get('unit') as string,
-        category: formData.get('category') as string || null,
-        critical_level: parseFloat(formData.get('critical_level') as string) || 0,
-        supplier_info: formData.get('supplier_info') as string || null,
-        safety_info: formData.get('safety_info') as string || null,
-        is_active: formData.get('is_active') === 'true',
-    };
-
-    // Validate required fields
-    if (!materialData.code || !materialData.name || !materialData.unit) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+    // Validate with Zod schema
+    const validation = parseMaterialFormData(formData);
+    if (!validation.success) {
+        return { error: formatZodErrors(validation.error) };
     }
+
+    const materialData = {
+        ...validation.data,
+        description: validation.data.description || null,
+        category: validation.data.category || null,
+        supplier_info: validation.data.supplier_info || null,
+        safety_info: validation.data.safety_info || null,
+    };
 
 
     // Use admin client to bypass RLS for creation
@@ -140,21 +138,19 @@ export async function createMaterial(formData: FormData) {
 export async function updateMaterial(materialId: string, formData: FormData) {
     const currentUser = await checkMaterialsAccess();
 
-    const materialData = {
-        code: formData.get('code') as string,
-        name: formData.get('name') as string,
-        description: formData.get('description') as string || null,
-        unit: formData.get('unit') as string,
-        category: formData.get('category') as string || null,
-        critical_level: parseFloat(formData.get('critical_level') as string) || 0,
-        supplier_info: formData.get('supplier_info') as string || null,
-        safety_info: formData.get('safety_info') as string || null,
-        is_active: formData.get('is_active') === 'true',
-    };
-
-    if (!materialData.code || !materialData.name || !materialData.unit) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+    // Validate with Zod schema
+    const validation = parseMaterialFormData(formData);
+    if (!validation.success) {
+        return { error: formatZodErrors(validation.error) };
     }
+
+    const materialData = {
+        ...validation.data,
+        description: validation.data.description || null,
+        category: validation.data.category || null,
+        supplier_info: validation.data.supplier_info || null,
+        safety_info: validation.data.safety_info || null,
+    };
 
     const supabase = await createClient();
 

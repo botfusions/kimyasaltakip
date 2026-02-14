@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from './auth';
+import { parseStockMovementFormData, formatZodErrors } from '@/lib/validations';
 
 /**
  * Kritik stok seviyesindeki malzemeleri getir
@@ -149,17 +150,17 @@ export async function addStockMovement(formData: FormData) {
 
         const materialId = formData.get('material_id') as string;
         const movementType = formData.get('movement_type') as string;
-        const quantity = parseFloat(formData.get('quantity') as string);
-        const unitCost = formData.get('unit_cost')
-            ? parseFloat(formData.get('unit_cost') as string)
-            : null;
-        const batchNumber = formData.get('batch_number') as string || null;
-        const supplier = formData.get('supplier') as string || null;
-        const notes = formData.get('notes') as string || null;
 
-        if (!materialId || !movementType || !quantity) {
-            return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+        // Validate with Zod schema
+        const validation = parseStockMovementFormData(formData);
+        if (!validation.success) {
+            return { error: formatZodErrors(validation.error) };
         }
+
+        const { quantity, unit_cost: unitCost } = validation.data;
+        const batchNumber = validation.data.batch_number || null;
+        const supplier = validation.data.supplier || null;
+        const notes = validation.data.notes || null;
 
         const supabase = await createClient();
 

@@ -74,7 +74,7 @@ export default async function InvoicesPage() {
                 )}
 
                 {/* Invoice List */}
-                <InvoiceListClient invoices={invoices || []} currentUser={currentUser} />
+                <InvoiceListClient invoices={(invoices || []) as any[]} currentUser={currentUser} />
             </div>
         </div>
     );

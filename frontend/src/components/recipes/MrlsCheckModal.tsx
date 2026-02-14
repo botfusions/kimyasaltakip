@@ -258,7 +258,7 @@ export default function MrlsCheckModal({ recipeId, onClose, onSuccess }: Props) 
                                     </Button>
                                 ) : (
                                     <Button
-                                        variant="outline"
+                                        variant="secondary"
                                         disabled
                                         className="flex-1 opacity-50 cursor-not-allowed"
                                     >
