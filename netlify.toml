@@ -1,0 +1,109 @@
+# ============================================
+# Netlify Configuration - Kimyasal Takip Sistemi
+# ============================================
+# Next.js 14 SSR deployment on Netlify
+# Requires: @netlify/plugin-nextjs
+
+[build]
+  # Base directory (monorepo support)
+  base = "frontend/"
+  
+  # Build command
+  command = "npm run build"
+  
+  # Output directory (Next.js default)
+  publish = ".next"
+
+# ============================================
+# Next.js Plugin (Required for SSR & Server Actions)
+# ============================================
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# ============================================
+# Environment Variables (Non-sensitive defaults)
+# ============================================
+# Sensitive keys (Supabase, Resend, etc.) must be set
+# via Netlify Dashboard > Site Settings > Environment Variables
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NEXT_PUBLIC_APP_NAME = "Kimyasal Takip Sistemi"
+
+# ============================================
+# Headers - Security
+# ============================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ============================================
+# Redirects
+# ============================================
+# SPA fallback (Next.js handles routing)
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Redirect www to non-www (production domain)
+# Uncomment when custom domain is set
+# [[redirects]]
+#   from = "https://www.yourdomain.com/*"
+#   to = "https://yourdomain.com/:splat"
+#   status = 301
+#   force = true
+
+# ============================================
+# Deploy Context: Production
+# ============================================
+[context.production]
+  command = "npm run build"
+  
+[context.production.environment]
+  NODE_ENV = "production"
+
+# ============================================
+# Deploy Context: Branch Deploys (Preview)
+# ============================================
+[context.branch-deploy]
+  command = "npm run build"
+
+[context.branch-deploy.environment]
+  NODE_ENV = "production"
+
+# ============================================
+# Deploy Context: Deploy Previews (PR previews)
+# ============================================
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "production"
+
+# ============================================
+# Functions (Netlify Serverless Functions)
+# ============================================
+[functions]
+  # Increase timeout for server actions (default 10s)
+  external_node_modules = ["sharp"]
+  
+  # Node bundler
+  node_bundler = "esbuild"

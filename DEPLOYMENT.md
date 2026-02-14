@@ -1,20 +1,21 @@
 # 🚀 Kimyasal Takip Sistemi - Deployment Rehberi
 
-> **Müşteri Kurulum Kılavuzu** - Sistemi başka bir sunucuya/müşteriye kurma adımları
+> **Müşteri Kurulum Kılavuzu** - GitHub + Netlify + Supabase ile deployment
 
 ---
 
 ## 📋 Ön Gereksinimler
 
 ### Gerekli Hesaplar
+- ✅ **GitHub** hesabı (Ücretsiz)
 - ✅ **Supabase** hesabı (Ücretsiz tier yeterli)
-- ✅ **Vercel** hesabı (Frontend deployment için)
+- ✅ **Netlify** hesabı (Ücretsiz tier yeterli - 100GB bandwidth/ay)
 - ✅ **Resend** hesabı (Email sistemi için - 100 email/gün ücretsiz)
 - ⚙️ **Gmail** hesabı (Opsiyonel - Otomatik fatura import için)
 
 ### Gerekli Araçlar
 ```bash
-# Node.js ve npm (v18.17+)
+# Node.js ve npm (v20+)
 node --version
 
 # Git
@@ -23,8 +24,8 @@ git --version
 # Supabase CLI
 npm install -g supabase
 
-# Vercel CLI (Opsiyonel)
-npm install -g vercel
+# Netlify CLI (Opsiyonel - otomatik deploy için)
+npm install -g netlify-cli
 ```
 
 ---
@@ -105,63 +106,109 @@ Supabase Dashboard > Authentication > Policies sayfasında:
 
 ---
 
-## 🌐 Adım 3: Frontend Deployment (Vercel)
+## 🐙 Adım 3: GitHub Repository Kurulumu
 
-### 3.1 GitHub Repository Oluştur
+### 3.1 GitHub'da Repository Oluştur
+
+1. [https://github.com/new](https://github.com/new) adresine git
+2. Repository adını gir: `kimyasal-takip`
+3. **Private** olarak ayarla (hassas proje verileri için)
+4. README, .gitignore ekleme (proje zaten hazır)
+5. "Create repository" tıkla
+
+### 3.2 Mevcut Projeyi GitHub'a Push Et
 
 ```bash
-# Git repository oluştur (eğer yoksa)
-git init
-git add .
-git commit -m "Initial commit - Kimyasal Takip Sistemi"
+# Proje klasörüne git
+cd "KİMYASAL TAKİP"
 
-# GitHub'a push et
+# GitHub remote ekle
 git remote add origin https://github.com/YOUR_USERNAME/kimyasal-takip.git
+
+# Main branch'e push et
 git branch -M main
 git push -u origin main
 ```
 
-### 3.2 Vercel'e Deploy
+### 3.3 GitHub Repository Ayarları
 
-#### Otomatik Deployment:
-1. [https://vercel.com](https://vercel.com) adresine git
-2. "Import Project" > GitHub repository'yi seç
-3. **Root Directory**: `frontend` olarak ayarla
-4. **Framework Preset**: Next.js (otomatik algılar)
-5. **Environment Variables** ekle (.env.local.example'dan kopyala):
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-GMAIL_ENABLED=false
-```
-
-6. "Deploy" tıkla (3-5 dakika)
-
-#### Manuel Deployment:
-```bash
-cd frontend
-
-# Vercel CLI ile deploy
-vercel
-
-# Production deployment
-vercel --prod
-```
+1. **Settings > Branches**: main branch koruması ekle
+   - ✅ Require pull request reviews (opsiyonel)
+   - ✅ Require status checks (CI pipeline)
+2. **Settings > Secrets & Variables > Actions**: (CI için gerekli değil, ama opsiyonel)
+   - Sensitive key'ler Netlify dashboard'da tutulur
 
 ---
 
-## ⚙️ Adım 4: Sistem Ayarları
+## 🌐 Adım 4: Netlify Deployment
 
-### 4.1 İlk Kullanıcı Oluştur
+### 4.1 Netlify'a GitHub Bağlantısı
 
-1. Vercel deployment URL'ine git (örn: `https://kimyasal-takip.vercel.app`)
+1. [https://app.netlify.com](https://app.netlify.com) adresine git
+2. "Add new site" > "Import an existing project" tıkla
+3. "GitHub" seç ve repository'yi bul: `kimyasal-takip`
+4. Build ayarları:
+   - **Base directory**: `frontend`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `frontend/.next`
+5. "Deploy site" tıkla
+
+> **Not**: `netlify.toml` dosyası bu ayarları otomatik yapılandırır.
+
+### 4.2 Environment Variables Ayarla
+
+Netlify Dashboard > Site Settings > Environment Variables:
+
+```
+# Zorunlu
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Email (Resend)
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+
+# Genel
+NEXT_PUBLIC_APP_NAME=Kimyasal Takip Sistemi
+NEXT_PUBLIC_COMPANY_NAME=DENİZLİ RATEKS TEKSTİL
+
+# Opsiyonel
+GMAIL_ENABLED=false
+GMAIL_IMAP_USER=your-email@gmail.com
+GMAIL_IMAP_PASSWORD=your-app-password
+GEMINI_API_KEY=your-gemini-api-key
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_CHAT_ID=your-chat-id
+```
+
+### 4.3 Redeploy (Environment Variables Sonrası)
+
+Environment variables ekledikten sonra:
+1. Netlify Dashboard > Deploys
+2. "Trigger deploy" > "Deploy site" tıkla
+3. Deploy loglarını kontrol et (3-5 dakika)
+
+### 4.4 Custom Domain (Opsiyonel)
+
+1. Netlify Dashboard > Domain management
+2. "Add custom domain" tıkla
+3. Domain adını gir: `kimyasaltakip.com`
+4. DNS ayarlarını yapılandır:
+   - **CNAME**: `www` → `your-site.netlify.app`
+   - **A Record**: `@` → Netlify IP (75.2.60.5)
+5. HTTPS otomatik olarak aktif olur (Let's Encrypt)
+
+---
+
+## ⚙️ Adım 5: Sistem Ayarları
+
+### 5.1 İlk Kullanıcı Oluştur
+
+1. Netlify deployment URL'ine git (örn: `https://kimyasal-takip.netlify.app`)
 2. `/login` sayfasından "Sign Up" tıkla
 3. İlk kullanıcıyı oluştur (otomatik olarak `admin` rolü alır)
 
-### 4.2 Admin Panelinden Email Ayarları
+### 5.2 Admin Panelinden Email Ayarları
 
 1. Dashboard > Settings sayfasına git
 2. Email ayarlarını güncelle:
@@ -173,9 +220,9 @@ vercel --prod
 
 ---
 
-## 🔧 Adım 5: Opsiyonel Özellikler
+## 🔧 Adım 6: Opsiyonel Özellikler
 
-### 5.1 Gmail IMAP (Otomatik Fatura Import)
+### 6.1 Gmail IMAP (Otomatik Fatura Import)
 
 **Not**: Başlangıçta devre dışı. İhtiyaç halinde aktif edin.
 
@@ -184,16 +231,16 @@ vercel --prod
    - App Passwords > Select App: "Mail"
    - 16 haneli şifreyi kopyala
 
-2. Vercel environment variables güncelle:
+2. Netlify environment variables güncelle:
 ```bash
 GMAIL_ENABLED=true
 GMAIL_IMAP_USER=your-email@gmail.com
 GMAIL_IMAP_PASSWORD=your-16-digit-app-password
 ```
 
-3. Vercel'de redeploy et
+3. Netlify'da redeploy et
 
-### 5.2 OCR (PDF/JPEG Fatura Import)
+### 6.2 OCR (PDF/JPEG Fatura Import)
 
 **Tesseract OCR** kurulumu:
 
@@ -207,27 +254,55 @@ pip3 install pytesseract pdf2image Pillow
 # read-pdf-ocr.py scriptini sunucuya kopyala
 ```
 
-### 5.3 AI Uzman Danışman (Gemini API)
+### 6.3 AI Uzman Danışman (Gemini API)
 
 1. [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey) adresine git
 2. "Create API Key" tıkla
-3. Vercel environment variables ekle:
+3. Netlify environment variables ekle:
 ```bash
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ---
 
-## ✅ Adım 6: Doğrulama ve Test
+## 🔄 CI/CD Pipeline
 
-### 6.1 Database Kontrolü
+### Otomatik Süreçler
+
+GitHub'a push yaptığınızda otomatik olarak:
+
+1. **GitHub Actions CI** (`.github/workflows/ci.yml`):
+   - ✅ ESLint kontrolü
+   - ✅ TypeScript tip kontrolü
+   - ✅ Next.js build testi
+   - ✅ Güvenlik taraması (npm audit)
+   - ✅ Gizli anahtar taraması
+
+2. **Netlify Auto Deploy**:
+   - ✅ `main` branch'e push → Production deploy
+   - ✅ Pull Request → Preview deploy (ayrı URL)
+   - ✅ Build failure → Deploy engellenir
+
+### Branch Stratejisi (Önerilen)
+
+```
+main (production)     ← Netlify production deploy
+  └── develop         ← Netlify preview deploy
+       └── feature/*  ← PR ile develop'a merge
+```
+
+---
+
+## ✅ Adım 7: Doğrulama ve Test
+
+### 7.1 Database Kontrolü
 
 Supabase Dashboard > Table Editor:
 - ✅ `users` tablosunda ilk kullanıcı var mı?
 - ✅ `materials` tablosunda seed data var mı?
 - ✅ `settings` tablosunda email ayarları var mı?
 
-### 6.2 Fonksiyon Testleri
+### 7.2 Fonksiyon Testleri
 
 1. **Authentication**: Login/Logout çalışıyor mu?
 2. **Malzeme Yönetimi**: Yeni malzeme ekleyebiliyor musun?
@@ -236,23 +311,33 @@ Supabase Dashboard > Table Editor:
 5. **Email Sistemi**: Test email gönderebiliyor musun?
 6. **Fatura Import**: XML fatura yükleyip içe aktarabiliyor musun?
 
+### 7.3 Netlify Deployment Doğrulama
+
+- [ ] Site URL çalışıyor
+- [ ] Login sayfası yükleniyor
+- [ ] API route'lar çalışıyor (Server Actions)
+- [ ] Environment variables doğru yüklenmiş
+- [ ] HTTPS aktif
+
 ---
 
-## 📊 Adım 7: Production Checklist
+## 📊 Adım 8: Production Checklist
 
 Müşteriye teslim öncesi kontrol listesi:
 
 ### Güvenlik
 - [ ] Supabase RLS policies aktif
-- [ ] Service role key güvenli yerde saklanmış
+- [ ] Service role key Netlify env var'da saklanmış
 - [ ] Resend API key environment variable'da
 - [ ] Database şifresi güvenli
+- [ ] GitHub repo Private olarak ayarlanmış
+- [ ] .env dosyaları .gitignore'da
 
 ### Performans
-- [ ] Vercel deployment başarılı
+- [ ] Netlify deployment başarılı
 - [ ] Database indexes oluşturulmuş
 - [ ] Image optimization aktif
-- [ ] API rate limiting ayarlanmış
+- [ ] Security headers aktif (netlify.toml)
 
 ### Özellikler
 - [ ] Tüm migration dosyaları çalıştırılmış
@@ -313,12 +398,18 @@ SELECT setval('materials_id_seq', (SELECT MAX(id) FROM materials));
 **Hata**: "permission denied"
 **Çözüm**: Supabase Dashboard'dan manuel SQL çalıştır
 
-### Vercel Deployment Hataları
-**Hata**: "Module not found"
+### Netlify Deployment Hataları
+**Hata**: "Build failed - Module not found"
 **Çözüm**: `package.json` dependencies kontrol et, `npm install` çalıştır
 
-**Hata**: "Environment variable missing"
-**Çözüm**: Vercel > Settings > Environment Variables ekle, redeploy et
+**Hata**: "Build failed - Type error"
+**Çözüm**: `npx tsc --noEmit` ile hataları local'de düzelt
+
+**Hata**: "Environment variable missing / Supabase connection failed"
+**Çözüm**: Netlify > Site Settings > Environment Variables'dan kontrol et, redeploy yap
+
+**Hata**: "Netlify plugin error"
+**Çözüm**: `@netlify/plugin-nextjs` paketinin güncel olduğundan emin ol
 
 ### Email Gönderim Hataları
 **Hata**: "API key invalid"
@@ -337,6 +428,6 @@ SELECT setval('materials_id_seq', (SELECT MAX(id) FROM materials));
 
 ---
 
-**Son Güncelleme**: 7 Şubat 2026
-**Versiyon**: 1.0.0
+**Son Güncelleme**: 14 Şubat 2026
+**Versiyon**: 2.0.0 (GitHub + Netlify)
 **Deployment Süresi**: ~30-45 dakika

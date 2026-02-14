@@ -1,0 +1,106 @@
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+.pnp
+.pnp.js
+
+# ============================================
+# Environment Variables (CRITICAL - Never commit!)
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env.local
+frontend/.env
+
+# ============================================
+# Next.js Build Output
+# ============================================
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# ============================================
+# Netlify
+# ============================================
+.netlify/
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+frontend/coverage/
+*.lcov
+
+# ============================================
+# TypeScript
+# ============================================
+*.tsbuildinfo
+frontend/next-env.d.ts
+
+# ============================================
+# Python
+# ============================================
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============================================
+# IDE / Editor
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ============================================
+# Debug Logs
+# ============================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# Misc
+# ============================================
+*.pem
+*.key
+*.cert
+*.p12
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Tessdata (large binary files - download separately)
+tessdata/
+
+# Archive folder (internal development docs)
+# archive/
