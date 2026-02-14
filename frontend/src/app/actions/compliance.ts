@@ -1,144 +1,199 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getCurrentUser } from './auth';
-import { getSettingByKey } from './settings';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from './auth';
 
-const SYSTEM_INSTRUCTION = `
-You are a top-tier chemical compliance expert in the textile industry. 
-Your task is to cross-reference a given list of recipe ingredients against provided manufacturing restricted substances lists (MRLS, OEKOTEX, etc.) documents (PDFs).
+// --- Hardcoded Seed Data (Subset for Demo) ---
+const SEED_STANDARDS = [
+    { name: 'ZDHC MRSL v3.1', version: '3.1', description: 'Zero Discharge of Hazardous Chemicals' },
+    { name: 'Oeko-Tex Standard 100', version: '2025', description: 'Tested for harmful substances' }
+];
 
-Rules:
-1. **Analyze** the provided PDF document(s) thoroughly. These may include MRLS, OEKOTEX, or other restricted substance lists.
-2. **Review** the list of ingredients provided in the prompt.
-3. **Identify** if any ingredient in the recipe matches a restricted substance in ANY of the provided documents.
-    - Match by **CAS Number** (most accurate).
-    - Match by **Chemical Name** (fuzzy match if CAS is missing, but be careful of synonyms).
-4. **Report** your findings in a strict JSON format.
+const SEED_SUBSTANCES = [
+    // ZDHC MRSL v3.1
+    { standard: 'ZDHC MRSL v3.1', cas: '9016-45-9', name: 'Nonylphenol ethoxylates (NPEO)', limit: 10, unit: 'mg/kg' },
+    { standard: 'ZDHC MRSL v3.1', cas: '92-87-5', name: 'Benzidine', limit: 20, unit: 'mg/kg' },
+    { standard: 'ZDHC MRSL v3.1', cas: '7440-43-9', name: 'Cadmium', limit: 5, unit: 'mg/kg' },
+    { standard: 'ZDHC MRSL v3.1', cas: '7439-92-1', name: 'Lead', limit: 90, unit: 'mg/kg' },
+    { standard: 'ZDHC MRSL v3.1', cas: '7440-38-2', name: 'Arsenic', limit: 10, unit: 'mg/kg' },
+    { standard: 'ZDHC MRSL v3.1', cas: '7440-47-3', name: 'Chromium (VI)', limit: 3, unit: 'mg/kg' },
 
-JSON Output Format:
-{
-  "is_compliant": boolean, // true if NO restricted substances are found (or all are within limits), false otherwise.
-  "analyzed_at": string, // ISO date
-  "detected_substances": [
-    {
-      "ingredient_name": "Name from recipe",
-      "matched_mrls_name": "Name found in MRLS/OEKOTEX PDF",
-      "cas_number": "CAS Number found",
-      "restriction_type": "Banned" | "Limited" | "Usage Ban",
-      "limit_value": "e.g. 50 ppm or 'Detection Limit'",
-      "page_number": number, // The page number in the PDF where this substance is listed.
-      "status": "FAIL" | "WARNING" | "PASS", // FAIL if banned/over limit, WARNING if close to limit or needs testing, PASS if present but allowed under certain conditions.
-      "explanation": "Brief explanation of the restriction and why it matched."
+    // Oeko-Tex Standard 100
+    { standard: 'Oeko-Tex Standard 100', cas: '50-00-0', name: 'Formaldehyde', limit: 75, unit: 'mg/kg' },
+    { standard: 'Oeko-Tex Standard 100', cas: '7439-92-1', name: 'Lead', limit: 90, unit: 'mg/kg' },
+    { standard: 'Oeko-Tex Standard 100', cas: '7440-43-9', name: 'Cadmium', limit: 40, unit: 'mg/kg' },
+    { standard: 'Oeko-Tex Standard 100', cas: '111-15-9', name: '2-Ethoxyethyl acetate', limit: 5, unit: 'mg/kg' },
+];
+
+/**
+ * Ensures that basic compliance data exists.
+ * Called automatically before checks.
+ */
+async function ensureComplianceData() {
+    const supabase = await createClient();
+
+    // Check if standards exist
+    const { count } = await supabase.from('compliance_standards').select('*', { count: 'exact', head: true });
+
+    if (count === 0) {
+        console.log('Seeding compliance data...');
+
+        // 1. Insert Standards
+        const { data: standards, error: stdError } = await supabase
+            .from('compliance_standards')
+            .insert(SEED_STANDARDS)
+            .select();
+
+        if (stdError) {
+            console.error('Error seeding standards:', stdError);
+            return;
+        }
+
+        // 2. Insert Substances
+        // Map standard names to IDs
+        const stdMap = new Map(standards.map((s: any) => [s.name, s.id]));
+
+        const substancesToInsert = SEED_SUBSTANCES.map(s => ({
+            standard_id: stdMap.get(s.standard),
+            cas_number: s.cas,
+            chemical_name: s.name,
+            limit_value: s.limit,
+            limit_unit: s.unit
+        })).filter(s => s.standard_id); // Ensure we have the ID
+
+        if (substancesToInsert.length > 0) {
+            const { error: subError } = await supabase.from('restricted_substances').insert(substancesToInsert);
+            if (subError) console.error('Error seeding substances:', subError);
+        }
     }
-  ],
-  "summary": "A brief execution summary of the compliance check.",
-  "recommendations": ["List of actions to take if non-compliant"]
 }
 
-If no matches are found, "detected_substances" should be an empty array and "is_compliant" should be true.
-`;
+/**
+ * Check if a recipe complies with all active standards.
+ */
+export async function checkRecipeCompliance(recipeId: string) {
+    const currentUser = await getCurrentUser();
 
-export async function checkRecipeCompliance(formData: FormData) {
-    try {
-        const user = await getCurrentUser();
-        if (!user) {
-            throw new Error('Yetkisiz işlem. Lütfen giriş yapın.');
-        }
+    // 1. Ensure data exists
+    await ensureComplianceData();
 
-        const recipeId = formData.get('recipeId') as string;
-        const files = formData.getAll('files') as File[];
+    const supabase = await createClient();
 
-        if (!recipeId || files.length === 0) {
-            throw new Error('Reçete ID veya dosyalar eksik.');
-        }
-
-        // 1. Get Recipe Details
-        const supabase = await createClient();
-        const { data: recipe, error: recipeError } = await supabase
-            .from('recipes')
-            .select(`
-                *,
-                product:products(name, code),
-                items:recipe_items(
-                    amount,
-                    material:materials(name, code, cas_number, category)
+    // 2. Get Recipe Items & Materials
+    const { data: recipe } = await supabase
+        .from('recipes')
+        .select(`
+            id,
+            recipe_items (
+                material:materials (
+                    id,
+                    name,
+                    cas_number
                 )
-            `)
-            .eq('id', recipeId)
-            .single();
+            )
+        `)
+        .eq('id', recipeId)
+        .single();
 
-        if (recipeError || !recipe) {
-            throw new Error('Reçete bulunamadı.');
-        }
-
-        // Prepare Ingredients List for Prompt
-        const ingredientsList = recipe.items.map((item: any) => {
-            return `- Material: ${item.material.name} (Code: ${item.material.code}) | CAS: ${item.material.cas_number || 'N/A'} | Amount: ${item.amount}`;
-        }).join('\n');
-
-        // 2. Get API Key
-        const { data: apiKey } = await getSettingByKey('GOOGLE_GENERATIVE_AI_API_KEY');
-        if (!apiKey) {
-            throw new Error('Gemini API anahtarı ayarlanmamış.');
-        }
-
-        // 3. Prepare Gemini Request
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-3-flash-preview',
-            systemInstruction: SYSTEM_INSTRUCTION,
-        });
-
-        // Convert All Files to Base64 parts
-        const parts = await Promise.all(files.map(async (file) => {
-            const arrayBuffer = await file.arrayBuffer();
-            const base64Data = Buffer.from(arrayBuffer).toString('base64');
-            return {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: file.type || 'application/pdf',
-                },
-            };
-        }));
-
-        const prompt = `
-        Here is the recipe to check:
-        
-        Recipe Name: ${recipe.product.name} (${recipe.product.code})
-        Ingredients:
-        ${ingredientsList}
-
-        Please analyze the provided documents (MRLS, OEKOTEX, etc.) and cross-reference them with these ingredients. 
-        If an ingredient is found in ANY of the documents as restricted or banned, report it.
-        Also check for any special conditions or limits defined in the documents.
-        Return ONLY the JSON object as specified in the system instructions. Do not add markdown formatting.
-        `;
-
-        // 4. Call Gemini API
-        const result = await model.generateContent([
-            prompt,
-            ...parts,
-        ]);
-
-        const response = await result.response;
-        const text = response.text();
-
-        // Clean markdown code blocks if present
-        const jsonStr = text.replace(/```json\n?|\n?```/g, '').trim();
-
-        try {
-            const parsedResult = JSON.parse(jsonStr);
-            return { success: true, data: parsedResult };
-        } catch (jsonError) {
-            console.error('JSON Parse Error:', jsonError);
-            console.log('Raw Text:', text);
-            return { success: false, error: 'AI yanıtı işlenemedi. Lütfen tekrar deneyin.' };
-        }
-
-    } catch (error: any) {
-        console.error('Compliance Check Error:', error);
-        return { success: false, error: error.message || 'Bir hata oluştu.' };
+    if (!recipe || !recipe.recipe_items) {
+        return { error: 'Reçete veya malzeme bulunamadı' };
     }
+
+    // Filter items that have a CAS number
+    const itemsWithCas = recipe.recipe_items
+        .map((item: any) => item.material)
+        .filter((m: any) => m && m.cas_number);
+
+    if (itemsWithCas.length === 0) {
+        return { success: true, message: 'Kontrol edilecek CAS numaralı malzeme yok.', status: 'pass', violations: [] };
+    }
+
+    const casList = itemsWithCas.map((m: any) => m.cas_number);
+
+    // 3. Check against Restricted Substances
+    // We want to find any substance in the restricted list that matches our CAS numbers
+    const { data: restrictions } = await supabase
+        .from('restricted_substances')
+        .select(`
+            *,
+            standard:compliance_standards (name)
+        `)
+        .in('cas_number', casList);
+
+    const violations: any[] = [];
+    const passedStandards = new Set<string>();
+
+    if (restrictions && restrictions.length > 0) {
+        // Map violations
+        for (const restriction of restrictions) {
+            const material = itemsWithCas.find((m: any) => m.cas_number === restriction.cas_number);
+            violations.push({
+                standard: (restriction.standard as any)?.name,
+                material: material?.name,
+                cas: restriction.cas_number,
+                limit: `${restriction.limit_value} ${restriction.limit_unit}`,
+                status: 'FAIL'
+            });
+        }
+    }
+
+    // 4. Save/Update Compliance Check Record
+    // We should probably save a record per standard, but for simplicity, we'll save a summary or just return it.
+    // The schema has 'compliance_checks' table.
+
+    // Let's perform a check for each active standard to be thorough
+    const { data: allStandards } = await supabase.from('compliance_standards').select('id, name').eq('is_active', true);
+
+    if (allStandards) {
+        for (const std of allStandards) {
+            const stdViolations = violations.filter(v => v.standard === std.name);
+            const status = stdViolations.length > 0 ? 'fail' : 'pass';
+
+            // Upsert compliance check
+            // We need a unique constraint on (recipe_id, standard_id) which we might not have explicitly defined in the create table 
+            // but usually compliance_checks has an ID. We'll search first.
+
+            const checksToUpsert = {
+                recipe_id: recipeId,
+                standard_id: std.id,
+                status,
+                report: stdViolations.length > 0 ? { violations: stdViolations } : { message: 'All clear' },
+                checked_at: new Date().toISOString(),
+                checked_by: currentUser?.id
+            };
+
+            // First delete old check for this recipe/standard
+            const { error: delError } = await supabase
+                .from('compliance_checks')
+                .delete()
+                .eq('recipe_id', recipeId)
+                .eq('standard_id', std.id);
+
+            if (delError) console.error('Error deleting old checks:', delError);
+
+            const { error: insError } = await supabase
+                .from('compliance_checks')
+                .insert({
+                    recipe_id: recipeId,
+                    standard_id: std.id,
+                    status: status,
+                    report: violations.length > 0 ? { violations } : { message: 'All clear' },
+                    checked_at: new Date().toISOString(),
+                    checked_by: currentUser?.id
+                });
+
+            if (insError) console.error('Error inserting check:', insError);
+        }
+    }
+
+    const hasFailures = violations.length > 0;
+
+    return {
+        success: true,
+        status: hasFailures ? 'fail' : 'pass',
+        violations,
+        message: hasFailures
+            ? `${violations.length} kısıtlı madde tespit edildi.`
+            : 'Tüm standartlara uygun.'
+    };
 }

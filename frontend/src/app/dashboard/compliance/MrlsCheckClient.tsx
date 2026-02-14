@@ -15,27 +15,22 @@ interface Recipe {
 }
 
 interface ComplianceResult {
-    is_compliant: boolean;
-    analyzed_at: string;
-    detected_substances: Array<{
-        ingredient_name: string;
-        matched_mrls_name: string;
-        cas_number: string;
-        restriction_type: string;
-        limit_value: string;
-        page_number: number;
-        status: 'FAIL' | 'WARNING' | 'PASS';
-        explanation: string;
+    status: 'pass' | 'fail' | 'warning';
+    violations: Array<{
+        standard: string;
+        material: string;
+        cas: string;
+        limit: string;
+        status: string;
     }>;
-    summary: string;
-    recommendations: string[];
+    message: string;
 }
 
 export default function MrlsCheckClient() {
     const supabase = createClientComponentClient();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [selectedRecipe, setSelectedRecipe] = useState<string>('');
-    const [file, setFile] = useState<File | null>(null);
+    // const [file, setFile] = useState<File | null>(null); // Removed file upload
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<ComplianceResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -57,8 +52,8 @@ export default function MrlsCheckClient() {
     }
 
     async function handleCheck() {
-        if (!selectedRecipe || !file) {
-            setError('Lütfen bir reçete seçin ve PDF dosyası yükleyin.');
+        if (!selectedRecipe) {
+            setError('Lütfen bir reçete seçin.');
             return;
         }
 
@@ -66,15 +61,11 @@ export default function MrlsCheckClient() {
         setError(null);
         setResult(null);
 
-        const formData = new FormData();
-        formData.append('recipeId', selectedRecipe);
-        formData.append('file', file);
-
         try {
-            const response = await checkRecipeCompliance(formData);
+            const response = await checkRecipeCompliance(selectedRecipe);
 
             if (response.success) {
-                setResult(response.data);
+                setResult(response as ComplianceResult);
             } else {
                 setError(response.error as string);
             }
@@ -128,42 +119,12 @@ export default function MrlsCheckClient() {
                     </div>
                 </div>
 
-                {/* 2. PDF Upload */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center">
-                        <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">2</span>
-                        MRLS Dosyası Yükle (PDF)
-                    </h2>
 
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <input
-                            type="file"
-                            accept="application/pdf"
-                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                            className="hidden"
-                            id="pdf-upload"
-                        />
-                        <label htmlFor="pdf-upload" className="cursor-pointer flex flex-col items-center">
-                            <Upload className="h-10 w-10 text-gray-400 mb-3" />
-                            {file ? (
-                                <div className="text-green-600 font-medium flex items-center">
-                                    <FileText className="w-4 h-4 mr-2" />
-                                    {file.name}
-                                </div>
-                            ) : (
-                                <>
-                                    <span className="text-gray-900 dark:text-white font-medium">Dosya Seçmek İçin Tıkla</span>
-                                    <span className="text-sm text-gray-500 mt-1">Sadece PDF formatı (Max 50MB)</span>
-                                </>
-                            )}
-                        </label>
-                    </div>
-                </div>
 
                 {/* Action Button */}
                 <button
                     onClick={handleCheck}
-                    disabled={loading || !selectedRecipe || !file}
+                    disabled={loading || !selectedRecipe}
                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
@@ -174,7 +135,7 @@ export default function MrlsCheckClient() {
                     ) : (
                         <>
                             <CheckCircle />
-                            Uyumluluk Kontrolünü Başlat
+                            Sistem Kontrolünü Başlat
                         </>
                     )}
                 </button>
@@ -199,78 +160,57 @@ export default function MrlsCheckClient() {
                 {result && (
                     <div className="space-y-6 animate-in slide-in-from-right duration-500">
                         {/* Status Banner */}
-                        <div className={`p-6 rounded-xl border-l-8 shadow-sm ${result.is_compliant
-                                ? 'bg-green-50 border-green-500 text-green-900'
-                                : 'bg-red-50 border-red-500 text-red-900'
+                        <div className={`p-6 rounded-xl border-l-8 shadow-sm ${result.status === 'pass'
+                            ? 'bg-green-50 border-green-500 text-green-900'
+                            : 'bg-red-50 border-red-500 text-red-900'
                             }`}>
                             <div className="flex items-center gap-3 mb-2">
-                                {result.is_compliant
+                                {result.status === 'pass'
                                     ? <CheckCircle className="w-8 h-8 text-green-600" />
                                     : <AlertCircle className="w-8 h-8 text-red-600" />
                                 }
                                 <h2 className="text-2xl font-bold">
-                                    {result.is_compliant ? 'UYUMLU (PASS)' : 'UYUMSUZ (FAIL)'}
+                                    {result.status === 'pass' ? 'UYUMLU (PASS)' : 'UYUMSUZ (FAIL)'}
                                 </h2>
                             </div>
-                            <p className="opacity-90">{result.summary}</p>
+                            <p className="opacity-90">{result.message}</p>
                         </div>
 
                         {/* Detailed Findings */}
-                        {result.detected_substances.length > 0 && (
+                        {result.violations && result.violations.length > 0 && (
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                                 <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 font-semibold flex items-center justify-between">
                                     <span>Tespit Edilen Riskler</span>
                                     <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">
-                                        {result.detected_substances.length} Madde
+                                        {result.violations.length} Madde
                                     </span>
                                 </div>
                                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {result.detected_substances.map((item, idx) => (
+                                    {result.violations.map((item, idx) => (
                                         <div key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
                                                     <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                                        {item.ingredient_name}
-                                                        {item.status === 'FAIL' && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">FAIL</span>}
-                                                        {item.status === 'WARNING' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">UYARI</span>}
+                                                        {item.material}
+                                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">FAIL</span>
                                                     </div>
                                                     <div className="text-sm text-gray-500">
-                                                        MRLS Adı: {item.matched_mrls_name} | CAS: {item.cas_number}
+                                                        Standart: {item.standard} | CAS: {item.cas}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        Limit: {item.limit_value}
-                                                    </div>
-                                                    <div className="text-xs text-blue-600 flex items-center justify-end mt-1">
-                                                        <FileText className="w-3 h-3 mr-1" />
-                                                        Sayfa {item.page_number}
+                                                        Limit: {item.limit}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 p-2 rounded">
-                                                {item.explanation}
-                                            </p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Recommendations */}
-                        {result.recommendations.length > 0 && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                                <h3 className="text-blue-800 dark:text-blue-300 font-semibold mb-3 flex items-center">
-                                    <AlertTriangle className="w-5 h-5 mr-2" />
-                                    Önerilen Aksiyonlar
-                                </h3>
-                                <ul className="list-disc list-inside space-y-2 text-blue-900 dark:text-blue-200">
-                                    {result.recommendations.map((rec, i) => (
-                                        <li key={i}>{rec}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+
                     </div>
                 )}
             </div>

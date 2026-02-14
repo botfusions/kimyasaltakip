@@ -6,6 +6,7 @@ import { getCurrentUser } from './auth';
 import { sendEmail } from '@/lib/email';
 import { sendTelegramAlert } from '@/lib/telegram';
 import { getSettingByKey } from '@/app/actions/settings';
+import { checkRecipeCompliance } from './compliance';
 
 /**
  * Check if current user has recipe management access (admin or lab)
@@ -108,9 +109,9 @@ export async function getRecipeById(recipeId: string) {
 export async function createRecipe(formData: FormData) {
     const currentUser = await checkRecipeAccess();
 
-    // Only lab users can create recipes
-    if (currentUser.role !== 'lab') {
-        return { error: 'Sadece laboratuvar kullanıcıları reçete oluşturabilir' };
+    // Only lab and admin users can create recipes
+    if (!['lab', 'admin'].includes(currentUser.role)) {
+        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete oluşturabilir' };
     }
 
     const productId = formData.get('product_id') as string;
@@ -144,8 +145,11 @@ export async function createRecipe(formData: FormData) {
     const customerOrderNo = formData.get('customer_order_no') as string || null;
     const yarnType = formData.get('yarn_type') as string || null;
 
-    if (!productId || !versionCode || !itemsJson) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
+    // Auto-generate versionCode if not provided
+    const finalVersionCode = versionCode || orderCode || `V-${Date.now()}`;
+
+    if (!itemsJson) {
+        return { error: 'Lütfen malzeme bilgilerini doldurun' };
     }
 
     let items;
@@ -161,39 +165,35 @@ export async function createRecipe(formData: FormData) {
 
     const supabase = await createClient();
 
+    // Get a default usage type if not provided (it's mandatory in DB)
+    let usageTypeId = formData.get('usage_type_id') as string;
+    if (!usageTypeId) {
+        const { data: usageTypes } = await supabase.from('usage_types').select('id').limit(1);
+        if (usageTypes && usageTypes.length > 0) {
+            usageTypeId = usageTypes[0].id;
+        }
+    }
+
     // Insert recipe with status 'draft'
     const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
         .insert({
-            product_id: productId,
-            version_code: versionCode,
+            product_id: productId || null,
+            usage_type_id: usageTypeId, // Add this back
+            version_code: finalVersionCode,
             status: 'draft',
             notes,
             created_by: currentUser.id,
-            recipe_name_no: recipeNameNo,
+            recipe_name_no: recipeNameNo || orderCode, // Map orderCode to existing recipe_name_no as a fallback
             color_code: colorCode,
-            yarn_code: yarnCode,
+            yarn_code: yarnCode || yarnType, // Map yarnType to existing yarn_code
             planning_date: planningDate,
             start_date: startDate,
             finish_date: finishDate,
-            batch_ratio: batchRatio ? parseFloat(batchRatio) : null,
+            batch_ratio: batchRatio, // This exists in schema
             process_wash_count: processWashCount ? parseInt(processWashCount, 10) : null,
             cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
-
-            // Additional fields
-            order_code: orderCode,
-            process_info: processInfo,
-            total_weight: totalWeight ? parseFloat(totalWeight) : null,
-            machine_code: machineCode,
-            color_name: colorName,
-            work_order_date: workOrderDate,
-            bath_volume: bathVolume ? parseFloat(bathVolume) : null,
-            sip_no: sipNo,
-            customer_ref_no: customerRefNo,
-            customer_name: customerName,
-            customer_sip_mt: customerSipMt ? parseFloat(customerSipMt) : null,
-            customer_order_no: customerOrderNo,
-            yarn_type: yarnType,
+            // Only keeping available columns
         })
         .select()
         .single();
@@ -202,6 +202,7 @@ export async function createRecipe(formData: FormData) {
         if (recipeError.code === '23505') {
             return { error: 'Bu versiyon kodu zaten kullanılıyor' };
         }
+        console.error('Reçete oluşturma hatası (DB):', recipeError);
         await sendTelegramAlert(`Reçete oluşturma hatası (DB Insert)`, { error: recipeError, user: currentUser.id });
         return { error: 'Reçete oluşturulurken hata oluştu' };
     }
@@ -238,7 +239,12 @@ export async function createRecipe(formData: FormData) {
 
     revalidatePath('/dashboard/recipes');
 
-    return { success: true, data: recipe };
+    revalidatePath('/dashboard/recipes');
+
+    // Perform automatic compliance check
+    const complianceResult = await checkRecipeCompliance(recipe.id);
+
+    return { success: true, data: recipe, compliance: complianceResult };
 }
 
 /**
@@ -384,7 +390,12 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
 
     revalidatePath('/dashboard/recipes');
 
-    return { success: true, data: recipe };
+    revalidatePath('/dashboard/recipes');
+
+    // Perform automatic compliance check
+    const complianceResult = await checkRecipeCompliance(recipeId);
+
+    return { success: true, data: recipe, compliance: complianceResult };
 }
 
 /**
