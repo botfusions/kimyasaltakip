@@ -16,7 +16,7 @@ export async function sendEmail(options: {
 
         // Fetch settings
         const { data: settings, error: settingsError } = await supabase
-            .from('settings')
+            .from('kts_settings')
             .select('key, value')
             .in('key', ['RESEND_API_KEY', 'EMAIL_FROM_ADDRESS']);
 

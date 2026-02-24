@@ -42,8 +42,8 @@ export default function MrlsCheckClient() {
 
     async function loadRecipes() {
         const { data } = await supabase
-            .from('recipes')
-            .select('id, created_at, product:products(name, code)')
+            .from('kts_recipes')
+            .select('id, created_at, product:kts_products(name, code)')
             .eq('status', 'approved') // Only approved recipes
             .order('created_at', { ascending: false })
             .limit(50);

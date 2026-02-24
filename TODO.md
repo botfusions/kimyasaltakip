@@ -1,22 +1,25 @@
 # 📋 TODO LİSTESİ
 
-> **Son Güncelleme:** 8 Şubat 2026 - 22:00
-> **Durum:** %76 Tamamlandı ✨ (Hedef: %100)
+> **Son Güncelleme:** 18 Şubat 2026 - 19:45
+> **Durum:** %85 Tamamlandı ✨ (Hedef: %100)
 
 ---
 
 ## 🚨 P0 - KRİTİK HATA DÜZELTMELERİ (Bu Hafta!) ✅ TAMAMLANDI
 
 ### [x] 1. Database Types Düzelt (1 gün) ✅
+
 **Dosya:** `frontend/src/types/database.types.ts`
 
 **Komut:**
+
 ```bash
 cd frontend
 npx supabase gen types typescript --project-id <YOUR_PROJECT_ID> > src/types/database.types.ts
 ```
 
 **Kontrol:**
+
 - [x] `@ts-nocheck` satırı kaldırıldı ✅
 - [x] workspace, video_project gibi yanlış tablolar yok ✅
 - [x] users, recipes, materials gibi gerçek tablolar var ✅
@@ -25,29 +28,31 @@ npx supabase gen types typescript --project-id <YOUR_PROJECT_ID> > src/types/dat
 ---
 
 ### [x] 2. recipes.ts Düzelt (1 gün) ✅
+
 **Dosya:** `frontend/src/app/actions/recipes.ts`
 
 **Problem:** 13 eksik alan eklendi ✅
+
 - order_code, color_name, process_info, total_weight
 - machine_code, work_order_date, bath_volume
 - customer_name, sip_no, customer_ref_no
 - customer_order_no, customer_sip_mt, yarn_type
 
 **Düzeltme:**
+
 ```typescript
 // createRecipe fonksiyonu
-const { data, error } = await supabase
-  .from('recipes')
-  .insert({
-    product_id: recipeData.product_id,
-    usage_type_id: recipeData.usage_type_id, // ✅ EKLE
-    created_by: user.id,
-    status: 'draft',
-    // ... diğer alanlar
-  })
+const { data, error } = await supabase.from("recipes").insert({
+  product_id: recipeData.product_id,
+  usage_type_id: recipeData.usage_type_id, // ✅ EKLE
+  created_by: user.id,
+  status: "draft",
+  // ... diğer alanlar
+});
 ```
 
 **Frontend:**
+
 ```typescript
 // RecipeEditor.tsx - Form'a ekle
 <select name="usage_type_id" required>
@@ -61,12 +66,15 @@ const { data, error } = await supabase
 ---
 
 ### [x] 3. products.ts Düzelt (1 gün) ✅
+
 **Dosya:** `frontend/src/app/actions/products.ts`
 
 **Problem:** Olmayan alanlar kaldırıldı ✅
+
 - type, unit, target_ph, target_density, shelf_life_days kaldırıldı
 
 **Düzeltme:**
+
 ```typescript
 // KALDIR - DB'de yok
 // type: formData.get('type'),
@@ -74,50 +82,51 @@ const { data, error } = await supabase
 // target_ph: formData.get('target_ph'),
 
 // Sadece bunlar
-const { data, error } = await supabase
-  .from('products')
-  .insert({
-    code: formData.get('code'),
-    name: formData.get('name'),
-    description: formData.get('description'),
-    base_color: formData.get('base_color'),
-    is_active: true,
-  })
+const { data, error } = await supabase.from("products").insert({
+  code: formData.get("code"),
+  name: formData.get("name"),
+  description: formData.get("description"),
+  base_color: formData.get("base_color"),
+  is_active: true,
+});
 ```
 
 ---
 
 ### [x] 4. materials.ts Düzelt (1 gün) ✅
+
 **Dosya:** `frontend/src/app/actions/materials.ts`
 
 **Problem:** critical_level kullanımı düzeltildi ✅
+
 - min_stock → critical_level olarak değiştirildi
 - max_stock, storage_conditions kaldırıldı
 
 **Düzeltme:**
+
 ```typescript
 // DEĞIŞTIR
-const { data, error } = await supabase
-  .from('materials')
-  .insert({
-    code: formData.get('code'),
-    name: formData.get('name'),
-    unit: formData.get('unit'),
-    category: formData.get('category'),
-    critical_level: formData.get('critical_level'), // ✅ min_stock yerine
-    // min_stock: ... ❌ KALDIR
-    // max_stock: ... ❌ KALDIR
-  })
+const { data, error } = await supabase.from("materials").insert({
+  code: formData.get("code"),
+  name: formData.get("name"),
+  unit: formData.get("unit"),
+  category: formData.get("category"),
+  critical_level: formData.get("critical_level"), // ✅ min_stock yerine
+  // min_stock: ... ❌ KALDIR
+  // max_stock: ... ❌ KALDIR
+});
 ```
 
 ---
 
 ### [x] 5. users.ts - Supabase Auth Entegrasyonu (1 gün) ✅
+
 **Dosya:** `frontend/src/app/actions/users.ts`
 
 **Problem:** Kullanıcı oluşturulduğunda Supabase Auth'a kayıt yapılmıyor ✅
 
 **Tamamlanan İşlemler:**
+
 - [x] Validation schema'ya password alanı eklendi (`user.ts`)
 - [x] `createUser()` fonksiyonuna `auth.signUp()` entegrasyonu eklendi
 - [x] Auth'dan gelen `user.id` kullanılıyor
@@ -131,9 +140,11 @@ const { data, error } = await supabase
 ---
 
 ### [ ] 6. RLS Politikalarını Tamamla (2 gün)
+
 **Dosya:** `supabase/migrations/20260207000001_complete_rls.sql`
 
 **Oluştur ve uygula:**
+
 ```sql
 -- RECIPES
 CREATE POLICY recipes_lab_insert ON recipes
@@ -180,15 +191,16 @@ CREATE POLICY production_logs_insert ON production_logs
 ### [ ] 7. Üretim Modülü (7 gün)
 
 #### [ ] 7.1 Server Action (2 gün)
+
 **Dosya:** `frontend/src/app/actions/production.ts`
 
 ```typescript
-'use server'
+"use server";
 
 export async function startProduction(data: {
-  recipe_id: string
-  quantity: number
-  operator_id: string
+  recipe_id: string;
+  quantity: number;
+  operator_id: string;
 }) {
   // 1. Stok kontrolü
   // 2. production_logs kayıt
@@ -204,6 +216,7 @@ export async function completeProduction(id: string) {
 ```
 
 #### [ ] 7.2 Liste Sayfası (2 gün)
+
 **Dosya:** `frontend/src/app/dashboard/production/page.tsx`
 
 - [ ] Üretim listesi (tablo)
@@ -212,6 +225,7 @@ export async function completeProduction(id: string) {
 - [ ] "Yeni Üretim" butonu
 
 #### [ ] 7.3 Yeni Üretim Sayfası (2 gün)
+
 **Dosya:** `frontend/src/app/dashboard/production/new/page.tsx`
 
 - [ ] Reçete seçimi (dropdown + arama)
@@ -221,6 +235,7 @@ export async function completeProduction(id: string) {
 - [ ] Operator seçimi
 
 #### [ ] 7.4 Detay Sayfası (1 gün)
+
 **Dosya:** `frontend/src/app/dashboard/production/[id]/page.tsx`
 
 - [ ] Üretim detayları
@@ -233,6 +248,7 @@ export async function completeProduction(id: string) {
 ### [x] 8. Stok Yönetimi (5 gün) ✅ TAMAMLANDI (%0 → %100)
 
 #### [x] 8.1 Ana Sayfa (2 gün) ✅
+
 **Dosya:** `frontend/src/app/dashboard/stock/page.tsx`
 
 - [x] Stok listesi (tablo) ✅
@@ -244,6 +260,7 @@ export async function completeProduction(id: string) {
 - [x] Kritik stok uyarı banner'ı ✅
 
 #### [x] 8.2 Manuel Stok Giriş Formu (2 gün) ✅
+
 **Dosya:** `frontend/src/app/dashboard/stock/movement/new/page.tsx`
 
 - [x] Malzeme seçimi (dropdown) ✅
@@ -258,6 +275,7 @@ export async function completeProduction(id: string) {
 - [x] SSS (Sık Sorulan Sorular) bölümü ✅
 
 #### [x] 8.3 Stok Hareketi Yönetimi (1 gün) ✅
+
 **Server Actions:** `frontend/src/app/actions/stock.ts`
 
 - [x] getAllStock() - Tüm stokları listele ✅
@@ -271,13 +289,16 @@ export async function completeProduction(id: string) {
 ### [ ] 9. Raporlama Dashboard (4 gün)
 
 #### [ ] 9.1 Ana Rapor Sayfası (2 gün)
+
 **Dosya:** `frontend/src/app/dashboard/reports/page.tsx`
 
 - [ ] Tarih aralığı seçici
 - [ ] 3 tab: Tüketim / Üretim / Stok Trendi
 
 #### [ ] 9.2 Grafikler (2 gün)
+
 **Dosyalar:**
+
 - `ConsumptionChart.tsx` - Malzeme tüketim grafiği (bar chart)
 - `ProductionChart.tsx` - Üretim istatistikleri (line chart)
 - `StockTrendChart.tsx` - Stok değişimi (area chart)
@@ -289,6 +310,7 @@ export async function completeProduction(id: string) {
 ### [ ] 10. Maliyet Hesaplama (3 gün)
 
 #### [ ] 10.1 DB Değişikliği (0.5 gün)
+
 ```sql
 ALTER TABLE materials ADD COLUMN unit_price DECIMAL(12,2);
 ALTER TABLE stock_movements ADD COLUMN unit_cost DECIMAL(12,2);
@@ -296,10 +318,12 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ```
 
 #### [ ] 10.2 Malzeme Fiyat Yönetimi (1 gün)
+
 - [ ] MaterialModal'a unit_price alanı ekle
 - [ ] Fiyat geçmişi kaydet (opsiyonel)
 
 #### [ ] 10.3 Reçete Maliyet Hesaplama (1.5 gün)
+
 - [ ] RecipeDetailsView'a maliyet göster
 - [ ] Parti bazlı maliyet analizi
 - [ ] Maliyet karşılaştırma raporu
@@ -309,12 +333,14 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ## 🎯 P2 - FARKLILAŞMA (Hafta 7-12)
 
 ### [ ] 11. Proses Parametreleri (5 gün)
+
 - [ ] process_steps tablosu migration
 - [ ] RecipeEditor'a adım ekleme UI
 - [ ] Sıcaklık/pH/süre alanları
 - [ ] Proses kartı PDF
 
 ### [ ] 12. Kalite Kontrol (6 gün)
+
 - [ ] quality_tests tablosu
 - [ ] Test kaydı formu
 - [ ] ISO 105 test tipleri
@@ -322,6 +348,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [ ] Test sertifikası PDF
 
 ### [ ] 13. Barkod/QR Takip (4 gün)
+
 - [ ] Bidon barkod etiket PDF
 - [ ] Kamera okuma (react-webcam)
 - [ ] Lot bazlı stok hareketi
@@ -330,20 +357,26 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ### [x] 14. E-Fatura Entegrasyonu (5 gün) ✅ TAMAMLANDI
 
 #### [x] XML Parser (UBL-TR e-Fatura) ✅
+
 **Dosya:** `frontend/src/lib/invoice-parser.ts`
+
 - [x] parseInvoiceXML() - fast-xml-parser ✅
 - [x] Fatura bilgileri çıkarma ✅
 - [x] Otomatik malzeme eşleştirme ✅
 
 #### [x] OCR Entegrasyonu ✅
+
 **Dosya:** `frontend/src/app/api/ocr/route.ts`
+
 - [x] /api/ocr endpoint ✅
 - [x] Python Tesseract OCR entegrasyonu ✅
 - [x] PDF ve JPEG/PNG desteği ✅
 - [x] parseOCRText() - Regex bazlı parsing ✅
 
 #### [x] Fatura Import Actions ✅
+
 **Dosya:** `frontend/src/app/actions/invoices.ts`
+
 - [x] importInvoice() - XML için ✅
 - [x] importInvoiceFromOCR() - PDF/JPEG için ✅
 - [x] Fuzzy matching algoritması ✅
@@ -352,6 +385,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [x] getInvoiceHistory() - Fatura geçmişi ✅
 
 #### [x] Frontend ✅
+
 - [x] /dashboard/invoices/import sayfası ✅
 - [x] /dashboard/invoices sayfası (liste) ✅
 - [x] InvoiceImportClient.tsx ✅
@@ -362,6 +396,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [x] Fatura silme ve onay modalı ✅
 
 ### [ ] 15. AI RAG Optimizasyon (6 gün)
+
 - [ ] pgvector extension
 - [ ] recipe_embeddings tablosu
 - [ ] Vektörize etme script
@@ -372,6 +407,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ## 🌟 P3 - STRATEJİK DEĞER (Hafta 13-20)
 
 ### [ ] 16. ZDHC/RSL Uyumluluk (8 gün)
+
 - [ ] compliance_standards tablosu (zaten var)
 - [ ] restricted_substances tablosu (zaten var)
 - [ ] CAS numarası eşleştirme
@@ -379,14 +415,16 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [ ] Limit kontrolü algoritması
 - [ ] Uyumluluk raporu PDF
 
-### [ ] 17. L*a*b* ve Delta E (4 gün)
+### [ ] 17. L*a*b\* ve Delta E (4 gün)
+
 - [ ] color_measurements tablosu
-- [ ] Manuel L*a*b* giriş formu
+- [ ] Manuel L*a*b\* giriş formu
 - [ ] Delta E hesaplama fonksiyonu
 - [ ] Kabul kriteri tanımlama
 - [ ] Renk farkı görselleştirme
 
 ### [ ] 18. Tedarikçi Yönetimi (5 gün)
+
 - [ ] suppliers tablosu
 - [ ] Tedarikçi CRUD
 - [ ] Malzeme-tedarikçi ilişkilendirme
@@ -394,6 +432,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [ ] Performans raporu
 
 ### [ ] 19. API Entegrasyon (4 gün)
+
 - [ ] REST API endpoints (Next.js Route Handlers)
 - [ ] API key yönetimi (settings tablosu)
 - [ ] Webhook desteği
@@ -405,6 +444,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ## 📊 İLERLEME TAKİBİ
 
 ### Hafta 1 (7-13 Şubat) ✅ TAMAMLANDI
+
 - [x] Database migration oluşturuldu ✅
 - [x] Action düzeltmeleri (recipes, products, materials, stock) ✅
 - [x] Stok Yönetimi Sistemi (%0 → %100) ✅
@@ -418,6 +458,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ---
 
 ### Hafta 2 (14-20 Şubat)
+
 - [ ] Error handling
 - [ ] Validation (Zod)
 - [ ] Production deploy
@@ -428,6 +469,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ---
 
 ### Hafta 3-4 (21 Şubat - 6 Mart)
+
 - [ ] Üretim modülü
 - [ ] Stok yönetimi
 
@@ -436,6 +478,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ---
 
 ### Hafta 5-6 (7-20 Mart)
+
 - [ ] Raporlama dashboard
 - [ ] Maliyet hesaplama
 
@@ -446,6 +489,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ## 🎯 BAŞARI KRİTERLERİ
 
 ### Kısa Vade (2 Hafta) ✅ TAMAMLANDI
+
 - [x] Hiçbir TypeScript hatası ✅
 - [x] Tüm action'lar DB ile uyumlu ✅
 - [x] Migration dosyaları hazır (8 adet) ✅
@@ -455,12 +499,14 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - [x] Supabase Auth Entegrasyonu %100 ✅
 
 ### Orta Vade (6 Hafta)
+
 - ✅ Üretim modülü çalışıyor
 - ✅ Stok yönetimi tam
 - ✅ Raporlama dashboard aktif
 - ✅ Beta kullanıcı testi yapıldı
 
 ### Uzun Vade (12 Hafta)
+
 - ✅ Tüm farklılaşma özellikleri
 - ✅ Rakiplerden ayrışma sağlandı
 - ✅ İlk 10 müşteri kazanıldı
@@ -474,6 +520,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ### Phase 5 - Kritik Düzeltmeler ve Stok Sistemi Tamamlandı
 
 **Database Düzeltmeleri:**
+
 - ✅ Migration oluşturuldu: `20260207000001_add_missing_recipe_columns.sql`
 - ✅ recipes.ts: 13 eksik alan eklendi
 - ✅ products.ts: Olmayan alanlar kaldırıldı
@@ -481,6 +528,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ stock.ts: 3 yeni fonksiyon eklendi
 
 **Stok Yönetimi Sistemi (%0 → %100):**
+
 - ✅ Stok Dashboard (/dashboard/stock)
 - ✅ Manuel Stok Giriş Formu (/dashboard/stock/movement/new)
 - ✅ 3 hareket tipi: Giriş (📥), Çıkış (📤), Düzeltme (⚖️)
@@ -489,6 +537,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ SSS (Sık Sorulan Sorular) bölümü
 
 **E-Fatura Entegrasyonu:**
+
 - ✅ XML Parser (UBL-TR e-Fatura)
 - ✅ OCR Entegrasyonu (Tesseract, Python)
 - ✅ PDF ve JPEG/PNG desteği
@@ -498,6 +547,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ Fatura listesi ve yönetim sayfası
 
 **Deployment Hazırlık:**
+
 - ✅ DEPLOYMENT.md - Tam kurulum rehberi
 - ✅ .env.local.example - Environment variables şablonu
 - ✅ Migration dosyaları organize
@@ -512,6 +562,7 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 ### Phase 5.1 - Supabase Auth & Bug Fixes Tamamlandı
 
 **1. Supabase Auth Entegrasyonu ✅**
+
 - ✅ Password validation (Zod schema)
 - ✅ auth.signUp() ile kullanıcı kaydı
 - ✅ UserModal password alanları (yeni kullanıcı için)
@@ -520,12 +571,14 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ Admin kullanıcı oluşturuldu (selam@botfusions.com)
 
 **2. Database View & Bug Fixes ✅**
+
 - ✅ view_critical_stock migration oluşturuldu ve uygulandı
 - ✅ Dashboard kolon isimleri düzeltildi (stock_quantity → current_quantity)
 - ✅ StockManagementClient import hatası düzeltildi
 - ✅ Kritik stok uyarıları çalışıyor
 
 **3. Dark Mode Tamamlandı 🌓**
+
 - ✅ Tailwind config güncellendi (darkMode: 'class')
 - ✅ next-themes paketi kuruldu
 - ✅ ThemeProvider component oluşturuldu
@@ -537,12 +590,40 @@ ALTER TABLE stock_movements ADD COLUMN total_cost DECIMAL(12,2);
 - ✅ Tüm component'ler dark mode destekli
 
 **4. Dokümantasyon ✅**
+
 - ✅ README.md güncellendi (yeni özellikler eklendi)
 - ✅ TODO.md güncellendi (%72 → %75)
 - ✅ Git commit yapıldı (16 dosya)
 
 **Toplam Süre:** ~2 saat
 **Yeni Dosyalar:** 3 dosya oluşturuldu, 8 dosya güncellendi
+
+---
+
+## 🎉 BUGÜN TAMAMLANANLAR (18 Şubat 2026)
+
+### Phase 6 - Compliance & Stock Automation ✅
+
+**1. Reçete Uyumluluk (Compliance) ✅**
+
+- ✅ `checkRecipeCompliance` server action
+- ✅ MRSL/RSL veritabanı sorgulama
+- ✅ Reçete onay öncesi otomatik kontrol ve UI entegrasyonu
+
+**2. Otomatik Stok Düşümü ✅**
+
+- ✅ `approveRecipe` güncellemesi
+- ✅ Onay anında otomatik stok hareketi (Giriş -> Çıkış)
+- ✅ `addStockMovementInternal` ile internal yetki yönetimi
+- ✅ `kts_production_logs` ve `kts_production_materials` kaydı
+
+**3. Raporlama Altyapısı ✅**
+
+- ✅ `generateMonthlyUsageCSV` fonksiyonu
+- ✅ Admin client ile güvenli server-side veri erişimi
+- ✅ Üretim loglarından otomatik sarfiyat raporu oluşturma
+
+**Durum:** Kritik döngü tamamlandı (Onay -> Stok -> Rapor)
 
 ---
 

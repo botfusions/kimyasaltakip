@@ -41,6 +41,8 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - **Miktar ve oran doğrulama**
 - **Versiyon kodu yönetimi** - Her reçete değişikliği izlenebilir
 - **Otomatik planlama tarihi** - Bugünün tarihi otomatik atanır (salt okunur)
+39: - **Otomatik Uyumluluk Kontrolü** - MRLS (ZDHC/Oeko-Tex) veritabanına göre otomatik tarama
+40: - **Yönetici Onay Akışı** - Sistem kontrolü sonrası yönetici onayına sunulma
 
 #### Signature ID İle Onay Sistemi
 - Lab kullanıcıları **PIN** ile onaylar
@@ -162,14 +164,17 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 Supabase SQL Editor'da sırasıyla çalıştırın:
 
 ```bash
-1. supabase/migrations/20260130000001_tables.sql
-2. supabase/migrations/20260130000002_triggers.sql
-3. supabase/migrations/20260130000003_seed.sql
-4. supabase/migrations/20260130000004_add_signature_id.sql
-5. supabase/migrations/20260130000005_seed_settings.sql
-6. supabase/migrations/20260130000006_email_settings.sql  # Email sistemi
-7. supabase/migrations/20260130000007_stock_management.sql # Stok otomasyonu
-8. supabase/migrations/20260207000001_add_missing_recipe_columns.sql # Reçete alanları düzeltmesi
+1.  supabase/migrations/20260130000001_tables.sql
+2.  supabase/migrations/20260130000002_triggers.sql
+3.  supabase/migrations/20260130000003_seed.sql
+4.  supabase/migrations/20260130000004_add_signature_id.sql
+5.  supabase/migrations/20260130000005_seed_settings.sql
+6.  supabase/migrations/20260130000006_email_settings.sql
+7.  supabase/migrations/20260130000007_stock_management.sql
+8.  supabase/migrations/20260207000001_add_missing_recipe_columns.sql
+9.  supabase/migrations/20260216000002_rename_tables_kts.sql # Tablo isimlerine kts_ öneki ekleme
+10. supabase/migrations/20260216000003_fix_functions_and_rls.sql # Fonksiyon ve RLS düzeltmeleri
+11. supabase/migrations/20260216000004_add_percentage_to_recipe_items.sql # Eksik percentage sütunu
 ```
 
 ### 4. Email Sistemini Yapılandır
@@ -277,11 +282,9 @@ KİMYASAL TAKİP/
 │   │   │   │   ├── stock/        # 📦 Stok sayfası (YENİ)
 │   │   │   │   │   ├── page.tsx
 │   │   │   │   │   └── movement/
-│   │   │   │   │       └── new/  # 📝 Manuel stok giriş formu (YENİ)
+│   │   │   │   │       └── new/  # 📝 Manuel stok giriş formu
 │   │   │   │   │           └── page.tsx
-│   │   │   │   ├── invoices/     # 📄 Fatura sayfası (YENİ)
-│   │   │   │   │   └── import/
-│   │   │   │   │       └── page.tsx
+│   │   │   │   ├── compliance/   # 🛡️ Uyumluluk denetimi (ZDHC/MRLS)
 │   │   │   │   └── settings/     # ⚙️ Admin panel
 │   │   │   │       ├── page.tsx
 │   │   │   │       └── test-email/
@@ -292,9 +295,16 @@ KİMYASAL TAKİP/
 │   │   │   └── invoices/         # 📄 Fatura komponentleri (YENİ)
 │   │   │       └── InvoiceImportClient.tsx
 │   │   ├── lib/
+│   │   │   ├── invoice-parser/   # 📄 Modüler Fatura Parser (REFAKTÖR)
+│   │   │   │   ├── XmlParser.ts
+│   │   │   │   ├── OcrParser.ts
+│   │   │   │   └── MatchingEngine.ts
+│   │   │   ├── services/         # 🛠️ Merkezi Servisler
+│   │   │   │   └── pdf/
+│   │   │   │       └── recipePdf.ts # 📄 Reçete PDF üretimi
+│   │   │   ├── string-utils.ts   # 🔤 String/Fuzzy yardımcıları
 │   │   │   ├── email.ts          # 📧 Resend entegrasyonu
-│   │   │   ├── reports.ts        # 📄 CSV oluşturma
-│   │   │   ├── invoice-parser.ts # 📄 XML/OCR parser (YENİ)
+│   │   │   ├── compliance.ts     # 🛡️ MRLS kontrol mantığı
 │   │   │   └── supabase/
 │   │   └── types/
 │   └── public/
@@ -601,7 +611,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 | **Kullanıcı Yönetimi** | %100 | ✅ Tamamlandı |
 | **Malzeme Yönetimi** | %100 | ✅ Tamamlandı |
 | **Ürün Yönetimi** | %100 | ✅ Tamamlandı |
-| **Reçete Yönetimi** | %95 | ✅ Neredeyse Tam |
+| **Reçete Yönetimi** | %100 | ✅ Tamamlandı (Uyumluluk + Onay) |
 | **Stok Yönetimi** | %100 | ✅ TAMAMLANDI (YENİ!) |
 | **E-Fatura Entegrasyonu** | %80 | ✅ TAMAMLANDI (YENİ!) |
 | **Email Sistemi** | %100 | ✅ Tamamlandı |
@@ -673,12 +683,36 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 
 ---
 
+### ✅ REÇETE UYUMLULUK VE ONAY SİSTEMİ (Phase 7.0 Tamamlandı! 🎉)
+> **14 Şubat 2026**
+
+- [x] **Otomatik MRLS Uyumluluk Kontrolü** - Reçete oluşturulurken/güncellenirken içerdiği kimyasallar (CAS No) ZDHC MRSL ve Oeko-Tex standartlarına göre taranıyor.
+- [x] **Yasaklı Madde Tespiti** - Yasaklı veya limit üzeri kullanım varsa kullanıcı uyarılıyor ve reçete oluşturulması engelleniyor.
+- [x] **Akıllı Onay Akışı** - 'Kaydet' butonu yerine **"Sistem Kontrolü ve Ön Onay"** sistemi getirildi.
+  - 1. **Sistem Kontrolü:** MRLS veritabanı taraması.
+  - 2. **Otomatik Yönlendirme:** Uygunsa, durum otomatik olarak **'Pending'** (Yönetici Onayı Bekliyor) olur.
+- [x] **UI İyileştirmeleri** - Uyumluluk ihlalleri için detaylı modal penceresi eklendi.
+
+
+---
+
+### ✅ DEEPGRAPH REFAKTÖRÜ & DB STANDARDIZASYONU (Tamamlandı! 🎉)
+> **16 Şubat 2026**
+
+- [x] **DeepGraph Analizi ve Uygulaması** - Kod karmaşıklığı azaltıldı, modüler yapı güçlendirildi.
+- [x] **Tablo Ön Eki Geçişi (`kts_`)** - Tüm veritabanı tabloları `kts_` ön eki ile standartlaştırıldı.
+- [x] **Fatura İşleme Refaktörü** - `invoice-parser.ts` modüler hale getirildi: `XmlParser`, `OcrParser` ve `MatchingEngine`.
+- [x] **Stratejik PDF Servisi** - Reçete PDF üretimi `src/services/pdf/recipePdf.ts` altında merkezi bir yapıya taşındı.
+- [x] **Kritik Hata Giderimi** - `RecipeEditor` runtime hataları ve eksik `percentage` sütunu düzeltildi.
+
+---
+
 ## 📄 Lisans
 
 Bu proje özel lisans altındadır.
 
 ---
 
-**Son Güncelleme:** 13 Şubat 2026 (22:30)
-**Versiyon:** Phase 6.2 - Reçete & Malzeme İyileştirmeleri
+**Son Güncelleme:** 16 Şubat 2026 (17:30)
+**Versiyon:** Phase 7.5 - DeepGraph Refaktörü & DB Standardizasyonu
 **Geliştirici:** Kimyasal Takip Ekibi

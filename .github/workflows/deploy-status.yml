@@ -1,0 +1,49 @@
+# ============================================
+# Netlify Deploy Workflow - Kimyasal Takip Sistemi
+# ============================================
+# Triggers deploy status checks after Netlify builds
+# Note: Actual deployment is handled by Netlify GitHub integration
+# This workflow provides additional validation
+
+name: Deploy Status
+
+on:
+  deployment_status:
+
+jobs:
+  # ==========================================
+  # Post-Deploy Smoke Test
+  # ==========================================
+  smoke-test:
+    name: 🧪 Post-Deploy Smoke Test
+    runs-on: ubuntu-latest
+    if: github.event.deployment_status.state == 'success'
+
+    steps:
+      - name: 🔍 Check deployment URL
+        run: |
+          DEPLOY_URL="${{ github.event.deployment_status.target_url }}"
+          echo "Testing deployment at: $DEPLOY_URL"
+
+          # Wait for deployment to be ready
+          sleep 10
+
+          # Check if site is accessible
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" || echo "000")
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Deployment is accessible (HTTP $HTTP_STATUS)"
+          else
+            echo "⚠️ Deployment returned HTTP $HTTP_STATUS"
+          fi
+
+      - name: 📊 Create deployment summary
+        run: |
+          echo "## 🚀 Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | ${{ github.event.deployment_status.target_url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ github.event.deployment_status.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ github.event.deployment_status.state }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Created | $(date -u) |" >> $GITHUB_STEP_SUMMARY

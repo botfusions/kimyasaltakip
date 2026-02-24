@@ -31,7 +31,7 @@ export async function getMaterials(filters?: {
     const supabase = await createClient();
 
     let query = supabase
-        .from('materials')
+        .from('kts_materials')
         .select('*')
         .order('name', { ascending: true });
 
@@ -64,7 +64,7 @@ export async function getMaterialById(materialId: string) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .select('*')
         .eq('id', materialId)
         .single();
@@ -102,7 +102,7 @@ export async function createMaterial(formData: FormData) {
 
     // Insert material
     const { data, error } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .insert({
 
             ...materialData,
@@ -119,7 +119,7 @@ export async function createMaterial(formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'materials',
         record_id: data.id,
         action: 'INSERT',
@@ -156,14 +156,14 @@ export async function updateMaterial(materialId: string, formData: FormData) {
 
     // Get old data for audit
     const { data: oldData } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .select('*')
         .eq('id', materialId)
         .single();
 
     // Update material
     const { data, error } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .update({
             ...materialData,
             updated_at: new Date().toISOString(),
@@ -180,7 +180,7 @@ export async function updateMaterial(materialId: string, formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'materials',
         record_id: materialId,
         action: 'UPDATE',
@@ -203,7 +203,7 @@ export async function toggleMaterialStatus(materialId: string) {
 
     // Get current status
     const { data: material } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .select('is_active')
         .eq('id', materialId)
         .single();
@@ -216,7 +216,7 @@ export async function toggleMaterialStatus(materialId: string) {
 
     // Update status
     const { error } = await supabase
-        .from('materials')
+        .from('kts_materials')
         .update({
             is_active: newStatus,
             updated_at: new Date().toISOString(),
@@ -228,7 +228,7 @@ export async function toggleMaterialStatus(materialId: string) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'materials',
         record_id: materialId,
         action: 'UPDATE',

@@ -71,7 +71,7 @@ export async function getCurrentUser() {
 
     // Get user profile from users table
     const { data: profile, error: profileError } = await supabase
-        .from('users')
+        .from('kts_users')
         .select('id, email, name, role, is_active, phone, last_login_at')
         .eq('id', user.id)
         .single();
@@ -82,7 +82,7 @@ export async function getCurrentUser() {
 
     // Update last login time
     await supabase
-        .from('users')
+        .from('kts_users')
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', user.id);
 

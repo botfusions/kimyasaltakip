@@ -39,7 +39,7 @@ export async function getStockStats() {
 
         // Toplam malzeme sayısı
         const { count: totalMaterials } = await supabase
-            .from('materials')
+            .from('kts_materials')
             .select('*', { count: 'exact', head: true })
             .eq('is_active', true);
 
@@ -50,7 +50,7 @@ export async function getStockStats() {
 
         // Toplam stok değeri (stock tablosundan)
         const { data: stockData } = await supabase
-            .from('stock')
+            .from('kts_stock')
             .select('quantity');
 
         const totalStockQuantity = stockData?.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || 0;
@@ -88,10 +88,10 @@ export async function getAllStock(filters?: {
         const supabase = await createClient();
 
         let query = supabase
-            .from('stock')
+            .from('kts_stock')
             .select(`
                 *,
-                material:materials(
+                material:kts_materials(
                     id,
                     code,
                     name,
@@ -140,6 +140,105 @@ export async function getAllStock(filters?: {
 /**
  * Stok hareketi ekle (giriş/çıkış/düzeltme)
  */
+/**
+ * Internal function to add stock movement (bypasses permission check for internal use)
+ */
+export async function addStockMovementInternal(data: {
+    materialId: string;
+    movementType: string;
+    quantity: number;
+    unitCost?: number | null;
+    batchNumber?: string | null;
+    supplier?: string | null;
+    notes?: string | null;
+    userId: string;
+    referenceType?: string | null;
+    referenceId?: string | null;
+}, supabaseClient?: any) {
+    try {
+        const supabase = supabaseClient || await createClient();
+
+        const {
+            materialId,
+            movementType,
+            quantity,
+            unitCost,
+            batchNumber,
+            supplier,
+            notes,
+            userId,
+            referenceType,
+            referenceId
+        } = data;
+
+        // 1. Stok hareketi kaydet
+        const totalCost = unitCost ? quantity * unitCost : null;
+
+        const { data: movement, error: movementError } = await supabase
+            .from('kts_stock_movements')
+            .insert({
+                material_id: materialId,
+                movement_type: movementType,
+                quantity: movementType === 'out' ? -quantity : quantity,
+                unit_cost: unitCost,
+                total_cost: totalCost,
+                batch_number: batchNumber,
+                supplier: supplier,
+                notes: notes,
+                created_by: userId,
+                reference_type: referenceType,
+                reference_id: referenceId
+            })
+            .select()
+            .single();
+
+        if (movementError) {
+            return { error: 'Stok hareketi kaydedilemedi: ' + movementError.message };
+        }
+
+        // 2. Stock tablosunu güncelle
+        const { data: currentStock } = await supabase
+            .from('kts_stock')
+            .select('quantity')
+            .eq('material_id', materialId)
+            .single();
+
+        const currentQuantity = currentStock?.quantity || 0;
+        const newQuantity = movementType === 'out'
+            ? currentQuantity - quantity
+            : currentQuantity + quantity;
+
+        if (newQuantity < 0) {
+            // Rollback movement
+            await supabase.from('kts_stock_movements').delete().eq('id', movement.id);
+            return { error: 'Stok miktarı negatif olamaz' };
+        }
+
+        const { error: stockError } = await supabase
+            .from('kts_stock')
+            .upsert({
+                material_id: materialId,
+                quantity: newQuantity,
+                last_movement_at: new Date().toISOString(),
+                last_updated: new Date().toISOString(),
+                updated_by: userId,
+            }, { onConflict: 'material_id' });
+
+        if (stockError) {
+            // Rollback movement
+            await supabase.from('kts_stock_movements').delete().eq('id', movement.id);
+            return { error: 'Stok güncellenemedi: ' + stockError.message };
+        }
+
+        return { success: true, data: movement };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+/**
+ * Stok hareketi ekle (giriş/çıkış/düzeltme)
+ */
 export async function addStockMovement(formData: FormData) {
     try {
         const currentUser = await getCurrentUser();
@@ -157,71 +256,24 @@ export async function addStockMovement(formData: FormData) {
             return { error: formatZodErrors(validation.error) };
         }
 
-        const { quantity, unit_cost: unitCost } = validation.data;
-        const batchNumber = validation.data.batch_number || null;
-        const supplier = validation.data.supplier || null;
-        const notes = validation.data.notes || null;
+        const result = await addStockMovementInternal({
+            materialId,
+            movementType,
+            quantity: validation.data.quantity,
+            unitCost: validation.data.unit_cost,
+            batchNumber: validation.data.batch_number,
+            supplier: validation.data.supplier,
+            notes: validation.data.notes,
+            userId: currentUser.id,
+            referenceType: 'manual_adjustment',
+        });
 
-        const supabase = await createClient();
-
-        // 1. Stok hareketi kaydet
-        const totalCost = unitCost ? quantity * unitCost : null;
-
-        const { data: movement, error: movementError } = await supabase
-            .from('stock_movements')
-            .insert({
-                material_id: materialId,
-                movement_type: movementType,
-                quantity: movementType === 'out' ? -quantity : quantity,
-                unit_cost: unitCost,
-                total_cost: totalCost,
-                batch_number: batchNumber,
-                supplier: supplier,
-                notes: notes,
-                created_by: currentUser.id,
-            })
-            .select()
-            .single();
-
-        if (movementError) {
-            return { error: 'Stok hareketi kaydedilemedi' };
+        if (result.success) {
+            revalidatePath('/dashboard/stock');
         }
 
-        // 2. Stock tablosunu güncelle
-        const { data: currentStock } = await supabase
-            .from('stock')
-            .select('quantity')
-            .eq('material_id', materialId)
-            .single();
+        return result;
 
-        const currentQuantity = currentStock?.quantity || 0;
-        const newQuantity = movementType === 'out'
-            ? currentQuantity - quantity
-            : currentQuantity + quantity;
-
-        if (newQuantity < 0) {
-            await supabase.from('stock_movements').delete().eq('id', movement.id);
-            return { error: 'Stok miktarı negatif olamaz' };
-        }
-
-        const { error: stockError } = await supabase
-            .from('stock')
-            .upsert({
-                material_id: materialId,
-                quantity: newQuantity,
-                last_movement_at: new Date().toISOString(),
-                last_updated: new Date().toISOString(),
-                updated_by: currentUser.id,
-            });
-
-        if (stockError) {
-            await supabase.from('stock_movements').delete().eq('id', movement.id);
-            return { error: 'Stok güncellenemedi' };
-        }
-
-        revalidatePath('/dashboard/stock');
-
-        return { success: true, data: movement };
     } catch (error: any) {
         return { error: error.message };
     }
@@ -235,7 +287,7 @@ export async function getStockQuantityMap(): Promise<{ data: Record<string, numb
         const supabase = await createClient();
 
         const { data, error } = await supabase
-            .from('stock')
+            .from('kts_stock')
             .select('material_id, quantity');
 
         if (error) {
@@ -263,10 +315,10 @@ export async function getStockMovements(materialId: string, limit = 50) {
         const supabase = await createClient();
 
         const { data, error } = await supabase
-            .from('stock_movements')
+            .from('kts_stock_movements')
             .select(`
                 *,
-                created_by_user:users!stock_movements_created_by_fkey(id, name)
+                created_by_user:kts_users!stock_movements_created_by_fkey(id, name)
             `)
             .eq('material_id', materialId)
             .order('created_at', { ascending: false })

@@ -42,7 +42,7 @@ export async function getUsers(filters?: {
     const supabase = await createClient();
 
     let query = supabase
-        .from('users')
+        .from('kts_users')
         .select('id, email, name, role, is_active, phone, signature_id, created_at, last_login_at')
         .order('created_at', { ascending: false });
 
@@ -131,7 +131,7 @@ export async function createUser(formData: FormData) {
 
             // Check if signature ID already exists
             const { data: existing } = await supabase
-                .from('users')
+                .from('kts_users')
                 .select('id')
                 .eq('signature_id', signatureId)
                 .single();
@@ -147,7 +147,7 @@ export async function createUser(formData: FormData) {
 
     // 2. Insert user profile into users table
     const { data, error } = await supabase
-        .from('users')
+        .from('kts_users')
         .insert({
             id: authData.user.id, // Use Auth user ID
             email: validation.data.email,
@@ -172,7 +172,7 @@ export async function createUser(formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'users',
         record_id: data.id,
         action: 'INSERT',
@@ -212,7 +212,7 @@ export async function updateUser(userId: string, formData: FormData) {
 
     // Get old data for audit
     const { data: oldData } = await supabase
-        .from('users')
+        .from('kts_users')
         .select('*')
         .eq('id', userId)
         .single();
@@ -229,7 +229,7 @@ export async function updateUser(userId: string, formData: FormData) {
             signatureId = generateSignatureId();
 
             const { data: existing } = await supabase
-                .from('users')
+                .from('kts_users')
                 .select('id')
                 .eq('signature_id', signatureId)
                 .single();
@@ -248,7 +248,7 @@ export async function updateUser(userId: string, formData: FormData) {
 
     // Update user
     const { data, error } = await supabase
-        .from('users')
+        .from('kts_users')
         .update({
             email: validation.data.email,
             name: validation.data.name,
@@ -270,7 +270,7 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'users',
         record_id: userId,
         action: 'UPDATE',
@@ -293,7 +293,7 @@ export async function toggleUserStatus(userId: string) {
 
     // Get current status
     const { data: user } = await supabase
-        .from('users')
+        .from('kts_users')
         .select('is_active')
         .eq('id', userId)
         .single();
@@ -306,7 +306,7 @@ export async function toggleUserStatus(userId: string) {
 
     // Update status
     const { error } = await supabase
-        .from('users')
+        .from('kts_users')
         .update({
             is_active: newStatus,
             updated_at: new Date().toISOString(),
@@ -318,7 +318,7 @@ export async function toggleUserStatus(userId: string) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'users',
         record_id: userId,
         action: 'UPDATE',

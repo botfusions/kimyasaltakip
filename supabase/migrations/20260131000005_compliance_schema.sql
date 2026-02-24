@@ -75,3 +75,5 @@ CREATE POLICY "Public read access" ON restricted_substances FOR SELECT USING (tr
 CREATE POLICY "Public read access" ON compliance_documents FOR SELECT USING (true);
 CREATE POLICY "Users can see checks" ON compliance_checks FOR SELECT USING (true);
 CREATE POLICY "Users can insert checks" ON compliance_checks FOR INSERT WITH CHECK (auth.uid() = checked_by);
+CREATE POLICY "Users can delete checks" ON compliance_checks FOR DELETE USING (auth.uid() = checked_by);
+

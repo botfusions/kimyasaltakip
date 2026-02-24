@@ -8,7 +8,7 @@ export async function getSettings() {
     try {
         const supabase = await createClient();
         const { data, error } = await supabase
-            .from('settings')
+            .from('kts_settings')
             .select('*')
             .order('category', { ascending: true })
             .order('key', { ascending: true });
@@ -25,7 +25,7 @@ export async function getSettingByKey(key: string) {
     try {
         const supabase = await createClient();
         const { data, error } = await supabase
-            .from('settings')
+            .from('kts_settings')
             .select('value')
             .eq('key', key)
             .single();
@@ -46,7 +46,7 @@ export async function updateSetting(key: string, value: string) {
 
         const supabase = await createClient();
         const { error } = await supabase
-            .from('settings')
+            .from('kts_settings')
             .update({
                 value,
                 updated_at: new Date().toISOString(),
@@ -79,7 +79,7 @@ export async function updateSettings(settingsData: Record<string, string>) {
         // Update each setting
         for (const [key, value] of Object.entries(settingsData)) {
             const { error } = await supabase
-                .from('settings')
+                .from('kts_settings')
                 .update({
                     value,
                     updated_at: new Date().toISOString(),

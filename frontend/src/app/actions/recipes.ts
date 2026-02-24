@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { sendTelegramAlert } from '@/lib/telegram';
 import { getSettingByKey } from '@/app/actions/settings';
 import { checkRecipeCompliance } from './compliance';
+import { addStockMovementInternal } from './stock';
 
 /**
  * Check if current user has recipe management access (admin or lab)
@@ -34,12 +35,12 @@ export async function getRecipes(filters?: {
     const supabase = await createClient();
 
     let query = supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select(`
             *,
-            product:products(id, code, name),
-            created_by_user:users!recipes_created_by_fkey(id, name),
-            approved_by_user:users!recipes_approved_by_fkey(id, name, signature_id)
+            product:kts_products(id, code, name),
+            created_by_user:kts_users!recipes_created_by_fkey(id, name),
+            approved_by_user:kts_users!recipes_approved_by_fkey(id, name, signature_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -76,20 +77,21 @@ export async function getRecipeById(recipeId: string) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select(`
             *,
-            product:products(id, code, name),
-            created_by_user:users!recipes_created_by_fkey(id, name, email),
-            approved_by_user:users!recipes_approved_by_fkey(id, name, email, signature_id),
-            recipe_items(
+            product:kts_products(id, code, name),
+            created_by_user:kts_users!recipes_created_by_fkey(id, name, email),
+            approved_by_user:kts_users!recipes_approved_by_fkey(id, name, email, signature_id),
+            recipe_items:kts_recipe_items(
                 id,
                 material_id,
                 quantity,
+                percentage,
                 sort_order,
                 unit,
                 notes,
-                material:materials(id, code, name, unit, safety_info)
+                material:kts_materials(id, code, name, unit, safety_info)
             )
         `)
         .eq('id', recipeId)
@@ -168,7 +170,7 @@ export async function createRecipe(formData: FormData) {
     // Get a default usage type if not provided (it's mandatory in DB)
     let usageTypeId = formData.get('usage_type_id') as string;
     if (!usageTypeId) {
-        const { data: usageTypes } = await supabase.from('usage_types').select('id').limit(1);
+        const { data: usageTypes } = await supabase.from('kts_usage_types').select('id').limit(1);
         if (usageTypes && usageTypes.length > 0) {
             usageTypeId = usageTypes[0].id;
         }
@@ -176,7 +178,7 @@ export async function createRecipe(formData: FormData) {
 
     // Insert recipe with status 'draft'
     const { data: recipe, error: recipeError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .insert({
             product_id: productId || null,
             usage_type_id: usageTypeId, // Add this back
@@ -218,18 +220,18 @@ export async function createRecipe(formData: FormData) {
     }));
 
     const { error: itemsError } = await supabase
-        .from('recipe_items')
+        .from('kts_recipe_items')
         .insert(recipeItems);
 
     if (itemsError) {
         // Rollback recipe if items insertion fails
-        await supabase.from('recipes').delete().eq('id', recipe.id);
+        await supabase.from('kts_recipes').delete().eq('id', recipe.id);
         await sendTelegramAlert(`Reçete malzeme ekleme hatası`, { error: itemsError, user: currentUser.id });
         return { error: 'Malzemeler eklenirken hata oluştu' };
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipe.id,
         action: 'INSERT',
@@ -253,15 +255,15 @@ export async function createRecipe(formData: FormData) {
 export async function updateRecipe(recipeId: string, formData: FormData) {
     const currentUser = await checkRecipeAccess();
 
-    if (currentUser.role !== 'lab') {
-        return { error: 'Sadece laboratuvar kullanıcıları reçete düzenleyebilir' };
+    if (!['lab', 'admin'].includes(currentUser.role)) {
+        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete düzenleyebilir' };
     }
 
     const supabase = await createClient();
 
     // Check if recipe exists and is editable
     const { data: existingRecipe } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select('status, created_by')
         .eq('id', recipeId)
         .single();
@@ -317,7 +319,7 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
 
     // Update recipe
     const { data: recipe, error: recipeError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .update({
             version_code: versionCode,
             notes,
@@ -360,7 +362,7 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
     }
 
     // Delete old items and insert new ones
-    await supabase.from('recipe_items').delete().eq('recipe_id', recipeId);
+    await supabase.from('kts_recipe_items').delete().eq('recipe_id', recipeId);
 
     const recipeItems = items.map((item: any) => ({
         recipe_id: recipeId,
@@ -372,7 +374,7 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
     }));
 
     const { error: itemsError } = await supabase
-        .from('recipe_items')
+        .from('kts_recipe_items')
         .insert(recipeItems);
 
     if (itemsError) {
@@ -380,7 +382,7 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipeId,
         action: 'UPDATE',
@@ -405,8 +407,8 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
 export async function approveRecipe(recipeId: string, signatureId: string) {
     const currentUser = await checkRecipeAccess();
 
-    if (currentUser.role !== 'lab') {
-        return { error: 'Sadece laboratuvar kullanıcıları reçete onaylayabilir' };
+    if (!['lab', 'admin'].includes(currentUser.role)) {
+        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete onaylayabilir' };
     }
 
     if (!signatureId || signatureId.length < 4 || signatureId.length > 6) {
@@ -417,7 +419,7 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
 
     // Verify signature ID matches current user
     const { data: user } = await supabase
-        .from('users')
+        .from('kts_users')
         .select('signature_id')
         .eq('id', currentUser.id)
         .single();
@@ -428,7 +430,7 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
 
     // Check recipe status
     const { data: recipe } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select('status, created_by')
         .eq('id', recipeId)
         .single();
@@ -443,7 +445,7 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
 
     // Update recipe to approved status
     const { error: updateError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .update({
             status: 'approved',
             approved_by: currentUser.id,
@@ -458,7 +460,7 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipeId,
         action: 'UPDATE',
@@ -468,6 +470,84 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
             new: { status: 'approved', approved_by: currentUser.id },
         },
     });
+
+    // ---------------------------------------------------------
+    // AUTOMATIC STOCK DEDUCTION & PRODUCTION LOGGING
+    // ---------------------------------------------------------
+    try {
+        // 1. Get Recipe Details (Items & Quantities)
+        const { data: recipeDetails } = await supabase
+            .from('kts_recipes')
+            .select(`
+                *,
+                recipe_items:kts_recipe_items(
+                    material_id,
+                    quantity,
+                    unit
+                )
+            `)
+            .eq('id', recipeId)
+            .single();
+
+        if (recipeDetails) {
+            const batchNumber = `PRD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${recipeId.slice(0, 4).toUpperCase()}`;
+            const totalQuantity = recipeDetails.cauldron_quantity ||
+                (recipeDetails.recipe_items as any[])?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
+
+            // 2. Create Production Log
+            const { data: prodLog, error: logError } = await supabase
+                .from('kts_production_logs')
+                .insert({
+                    recipe_id: recipeId,
+                    batch_number: batchNumber,
+                    quantity: totalQuantity,
+                    unit: 'kg', // Defaulting to kg as per schema default, though recipe might vary
+                    status: 'completed', // Auto-completed for this workflow
+                    operator_id: currentUser.id,
+                    completed_at: new Date().toISOString(),
+                    started_at: new Date().toISOString(),
+                    notes: 'Otomatik stok düşümü ile oluşturuldu (Reçete Onayı)',
+                })
+                .select()
+                .single();
+
+            if (!logError && prodLog) {
+                // 3. Process Each Material
+                const items = (recipeDetails.recipe_items as any[]) || [];
+
+                for (const item of items) {
+                    // Deduct Stock
+                    await addStockMovementInternal({
+                        materialId: item.material_id,
+                        movementType: 'out',
+                        quantity: Number(item.quantity),
+                        userId: currentUser.id,
+                        referenceType: 'production_log',
+                        referenceId: prodLog.id,
+                        notes: `Reçete Onayı: ${recipeDetails.version_code}`,
+                    });
+
+                    // Create Production Material Record
+                    await supabase.from('kts_production_materials').insert({
+                        production_log_id: prodLog.id,
+                        material_id: item.material_id,
+                        planned_quantity: Number(item.quantity),
+                        actual_quantity: Number(item.quantity), // Assuming exact usage for auto-deduction
+                        unit: item.unit,
+                        stock_deducted: true,
+                        deducted_at: new Date().toISOString(),
+                    });
+                }
+            } else {
+                console.error('Production Log creation failed during approval:', logError);
+            }
+        }
+    } catch (stockError) {
+        console.error('Stock deduction failed during approval:', stockError);
+        // We do NOT fail the approval itself, but we log the error.
+        // In a perfect world, we'd use a transaction or saga.
+        await sendTelegramAlert(`Reçete onaylandı ancak stok düşümü başarısız oldu: ${recipeId}`, { error: stockError, user: currentUser.id });
+    }
 
     revalidatePath('/dashboard/recipes');
 
@@ -480,14 +560,14 @@ export async function approveRecipe(recipeId: string, signatureId: string) {
 export async function rejectRecipeForRevision(recipeId: string, reason: string) {
     const currentUser = await checkRecipeAccess();
 
-    if (currentUser.role !== 'lab') {
-        return { error: 'Sadece laboratuvar kullanıcıları bu işlemi yapabilir' };
+    if (!['lab', 'admin'].includes(currentUser.role)) {
+        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları bu işlemi yapabilir' };
     }
 
     const supabase = await createClient();
 
     const { data: recipe } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select('status')
         .eq('id', recipeId)
         .single();
@@ -502,7 +582,7 @@ export async function rejectRecipeForRevision(recipeId: string, reason: string) 
 
     // Update status to rejected
     const { error: updateError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .update({
             status: 'rejected',
             notes: reason,
@@ -515,7 +595,7 @@ export async function rejectRecipeForRevision(recipeId: string, reason: string) 
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipeId,
         action: 'UPDATE',
@@ -540,16 +620,16 @@ export async function rejectRecipeForRevision(recipeId: string, reason: string) 
 export async function submitForApproval(recipeId: string, complianceReport: string) {
     const currentUser = await checkRecipeAccess();
 
-    if (currentUser.role !== 'lab') {
-        return { error: 'Sadece laboratuvar kullanıcıları onaya gönderebilir' };
+    if (!['lab', 'admin'].includes(currentUser.role)) {
+        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları onaya gönderebilir' };
     }
 
     const supabase = await createClient();
 
     // 1. Get current notes to append report
     const { data: currentRecipe } = await supabase
-        .from('recipes')
-        .select('notes, version_code, product:products(name, code)')
+        .from('kts_recipes')
+        .select('notes, version_code, product:kts_products(name, code)')
         .eq('id', recipeId)
         .single();
 
@@ -567,7 +647,7 @@ export async function submitForApproval(recipeId: string, complianceReport: stri
     const newNotes = (currentRecipe.notes || '') + `\n\n[${new Date().toLocaleDateString()}] MRLS Raporu: ${reportSummary}`;
 
     const { data: recipe, error: updateError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .update({
             status: 'pending',
             notes: newNotes,
@@ -576,7 +656,7 @@ export async function submitForApproval(recipeId: string, complianceReport: stri
         .eq('id', recipeId)
         .select(`
             *,
-            created_by_user:users!recipes_created_by_fkey(name)
+            created_by_user:kts_users!recipes_created_by_fkey(name)
         `)
         .single();
 
@@ -616,7 +696,7 @@ export async function submitForApproval(recipeId: string, complianceReport: stri
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipeId,
         action: 'UPDATE',
@@ -640,7 +720,7 @@ export async function startProduction(recipeId: string) {
     const supabase = await createClient();
 
     const { data: recipe, error: fetchError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .select('status')
         .eq('id', recipeId)
         .single();
@@ -649,7 +729,7 @@ export async function startProduction(recipeId: string) {
     if (recipe.status !== 'approved') return { error: 'Sadece onaylı reçeteler üretime alınabilir' };
 
     const { error: updateError } = await supabase
-        .from('recipes')
+        .from('kts_recipes')
         .update({
             status: 'in_production',
             updated_at: new Date().toISOString()
@@ -659,7 +739,7 @@ export async function startProduction(recipeId: string) {
     if (updateError) return { error: 'Üretim başlatılamadı' };
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'recipes',
         record_id: recipeId,
         action: 'UPDATE',

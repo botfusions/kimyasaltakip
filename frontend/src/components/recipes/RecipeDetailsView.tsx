@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import SignatureVerificationModal from './SignatureVerificationModal';
 import { rejectRecipeForRevision, startProduction } from '@/app/actions/recipes';
-import { generateRecipePDF } from '@/utils/recipePdf';
+import { generateRecipePDF } from '@/lib/pdf/recipe-pdf';
 import { generateBarcodeDataURL } from '@/lib/barcode';
 import MrlsCheckModal from './MrlsCheckModal';
 import { Shield, Play } from 'lucide-react';
+import Image from 'next/image';
 
 interface RecipeItem {
     id: string;
@@ -166,7 +167,14 @@ export default function RecipeDetailsView({ recipe: initialRecipe, currentUser }
                 <div className="flex flex-wrap gap-3">
                     {barcodeDataURL && (
                         <div className="bg-white p-2 rounded shadow-sm">
-                            <img src={barcodeDataURL} alt="Barcode" className="h-12" />
+                            <Image
+                                src={barcodeDataURL}
+                                alt="Barcode"
+                                className="h-12 w-auto"
+                                width={100}
+                                height={48}
+                                unoptimized
+                            />
                         </div>
                     )}
                     {/* Lab Actions: Draft state */

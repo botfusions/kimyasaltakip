@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getRecipes } from '@/app/actions/recipes';
+import { getCurrentUser } from '@/app/actions/auth';
 import SignatureVerificationModal from './SignatureVerificationModal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -46,6 +47,7 @@ export default function RecipeManagementClient() {
     const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [userProfile, setUserProfile] = useState<any>(null);
 
     // Modal states
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -87,12 +89,17 @@ export default function RecipeManagementClient() {
         setIsLoading(true);
         setError('');
 
-        const result = await getRecipes();
+        const [recipesResult, userResult] = await Promise.all([
+            getRecipes(),
+            getCurrentUser()
+        ]);
 
-        if (result.error) {
-            setError(result.error);
+        setUserProfile(userResult);
+
+        if (recipesResult.error) {
+            setError(recipesResult.error);
         } else {
-            setRecipes(result.data || []);
+            setRecipes(recipesResult.data || []);
         }
 
         setIsLoading(false);
@@ -166,12 +173,14 @@ export default function RecipeManagementClient() {
                 </select>
 
                 {/* New Recipe Button */}
-                <Button
-                    variant="primary"
-                    onClick={() => router.push('/dashboard/recipes/new')}
-                >
-                    + Yeni Reçete
-                </Button>
+                {['lab', 'admin'].includes(userProfile?.role) && (
+                    <Button
+                        variant="primary"
+                        onClick={() => router.push('/dashboard/recipes/new')}
+                    >
+                        + Yeni Reçete
+                    </Button>
+                )}
             </div>
 
             {/* Recipes Table */}
@@ -259,7 +268,7 @@ export default function RecipeManagementClient() {
                                             >
                                                 Görüntüle
                                             </button>
-                                            {recipe.status !== 'approved' && (
+                                            {recipe.status !== 'approved' && ['lab', 'admin'].includes(userProfile?.role) && (
                                                 <button
                                                     onClick={() => router.push(`/dashboard/recipes/${recipe.id}/edit`)}
                                                     className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
@@ -267,7 +276,7 @@ export default function RecipeManagementClient() {
                                                     Düzenle
                                                 </button>
                                             )}
-                                            {recipe.status === 'draft' && (
+                                            {recipe.status === 'draft' && ['lab', 'admin'].includes(userProfile?.role) && (
                                                 <button
                                                     onClick={() => handleApprove(recipe)}
                                                     className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors font-semibold"

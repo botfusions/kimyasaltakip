@@ -1,7 +1,5 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { UserOptions } from 'jspdf-autotable';
 import { generateBarcodeDataURL } from '@/lib/barcode';
+import { PdfProvider } from './pdf-provider';
 
 interface RecipeItem {
     material: {
@@ -35,22 +33,14 @@ interface Recipe {
     recipe_items: RecipeItem[];
 }
 
-// Extend jsPDF with autotable
-interface jsPDFWithAutoTable extends jsPDF {
-    autoTable: (options: UserOptions) => jsPDF;
-}
-
 export const generateRecipePDF = (recipe: Recipe) => {
-    // Create PDF in A4 size
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-
-    // Helper for Turkish characters (basic replacement if needed, 
-    // but standard fonts in jsPDF usually support latin-ext if handled correctly)
-    const t = (text: string) => text;
+    const doc = PdfProvider.createDocument();
+    const t = PdfProvider.t;
+    const Colors = PdfProvider.Colors;
 
     // --- Header ---
     doc.setFontSize(22);
-    doc.setTextColor(40, 40, 40);
+    doc.setTextColor(...Colors.Text);
     doc.text(t('URUN RECETESI'), 14, 22);
 
     // Barcode
@@ -63,12 +53,12 @@ export const generateRecipePDF = (recipe: Recipe) => {
     }
 
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(...Colors.LightText);
     doc.text(t(`Versiyon: ${recipe.version_code}`), 14, 28);
     doc.text(t(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`), 14, 33);
 
     // --- Product Info Box ---
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(...Colors.Border);
     doc.line(14, 40, 196, 40);
 
     doc.setFontSize(12);
@@ -99,8 +89,8 @@ export const generateRecipePDF = (recipe: Recipe) => {
         body: tableData,
         foot: [[t('TOPLAM'), '', `${totalQuantity.toFixed(2)} ${recipe.product?.unit || 'kg'}`, '100.00%', '']],
         theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' },
+        headStyles: { fillColor: Colors.Primary, textColor: 255 },
+        footStyles: { fillColor: Colors.TableBg, textColor: 0, fontStyle: 'bold' },
         styles: { fontSize: 9, cellPadding: 3 },
     });
 
@@ -121,7 +111,7 @@ export const generateRecipePDF = (recipe: Recipe) => {
     const signatureY = Math.max(finalY + 50, 230);
 
     // Line for signatures
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(...Colors.Border);
     doc.line(14, signatureY - 10, 196, signatureY - 10);
 
     // Preparer
@@ -138,18 +128,18 @@ export const generateRecipePDF = (recipe: Recipe) => {
         doc.setFont('helvetica', 'normal');
         doc.text(recipe.approved_by_user.name, 120, signatureY + 7);
         doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(...Colors.LightText);
         doc.text(t(`Imza ID: ${recipe.approved_by_user.signature_id}`), 120, signatureY + 12);
         doc.text(t(`Onay Tarihi: ${new Date(recipe.approved_at || '').toLocaleString('tr-TR')}`), 120, signatureY + 17);
     } else {
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(150, 0, 0);
+        doc.setTextColor(...Colors.Danger);
         doc.text(t('ONAY BEKLIYOR'), 120, signatureY);
     }
 
     // Footer
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
+    doc.setTextColor(...Colors.LightText);
     doc.text(t('Bu belge sistem tarafindan otomatik olarak olusturulmustur.'), 105, 285, { align: 'center' });
     doc.text(t('Kimyasal Takip Sistemi v1.0'), 105, 290, { align: 'center' });
 

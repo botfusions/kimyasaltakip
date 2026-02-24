@@ -1,4 +1,4 @@
-import { createClient } from './supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 /**
  * Generates a CSV report for monthly usage based on production logs.
@@ -6,47 +6,20 @@ import { createClient } from './supabase/server';
  */
 export async function generateMonthlyUsageCSV() {
     try {
-        const supabase = await createClient();
+        const supabase = createAdminClient();
 
-        // 1. Fetch usage data with join
-        // Same query as in the n8n template for consistency
-        const { data, error } = await supabase.rpc('get_monthly_usage_report');
-
-        // If RPC doesn't exist yet, we might need to handle it or use a raw query
-        // For now, let's assume we implement the query logic here or use another migration
-
-        const query = `
-            SELECT 
-                r.product_id, 
-                p.code as product_code, 
-                r.version_code, 
-                m.code as material_code, 
-                m.name as material_name,
-                pm.actual_quantity, 
-                pl.completed_at,
-                pl.batch_number
-            FROM recipes r 
-            JOIN products p ON r.product_id = p.id 
-            JOIN production_logs pl ON r.id = pl.recipe_id 
-            JOIN production_materials pm ON pl.id = pm.production_log_id 
-            JOIN materials m ON pm.material_id = m.id 
-            WHERE pl.status = 'completed' 
-            AND pl.completed_at >= (CURRENT_DATE - INTERVAL '1 month')
-        `;
-
-        // Note: Using postgrest for the join if possible, or we might need a stored procedure
-        // Let's use a simpler select for now and refine if needed
+        // Fetch usage data using Supabase JS client
         const { data: usageData, error: usageError } = await supabase
-            .from('production_materials')
+            .from('kts_production_materials')
             .select(`
                 actual_quantity,
-                material:materials(code, name),
-                production_log:production_logs(
+                material:kts_materials(code, name),
+                production_log:kts_production_logs(
                     completed_at,
                     batch_number,
-                    recipe:recipes(
+                    recipe:kts_recipes(
                         version_code,
-                        product:products(code)
+                        product:kts_products(code)
                     )
                 )
             `)

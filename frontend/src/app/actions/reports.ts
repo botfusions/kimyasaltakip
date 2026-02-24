@@ -13,7 +13,7 @@ export async function sendMonthlyReportAction() {
 
         // 1. Get receiver emails from settings
         const { data: setting } = await supabase
-            .from('settings')
+            .from('kts_settings')
             .select('value')
             .eq('key', 'REPORT_RECEIVER_EMAILS')
             .single();

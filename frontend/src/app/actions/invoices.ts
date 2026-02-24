@@ -82,7 +82,7 @@ export async function importInvoiceFromOCR(ocrText: string): Promise<InvoiceImpo
             if (!line.matchedMaterialId) continue;
 
             // Create stock movement (IN)
-            const { error: movementError } = await supabase.from('stock_movements').insert({
+            const { error: movementError } = await supabase.from('kts_stock_movements').insert({
                 material_id: line.matchedMaterialId,
                 movement_type: 'in',
                 quantity: line.quantity || 0,
@@ -103,7 +103,7 @@ export async function importInvoiceFromOCR(ocrText: string): Promise<InvoiceImpo
 
             // Update stock table
             const { data: currentStock } = await supabase
-                .from('stock')
+                .from('kts_stock')
                 .select('quantity')
                 .eq('material_id', line.matchedMaterialId)
                 .single();
@@ -111,7 +111,7 @@ export async function importInvoiceFromOCR(ocrText: string): Promise<InvoiceImpo
             const currentQuantity = currentStock?.quantity || 0;
             const newQuantity = currentQuantity + (line.quantity || 0);
 
-            await supabase.from('stock').upsert({
+            await supabase.from('kts_stock').upsert({
                 material_id: line.matchedMaterialId,
                 quantity: newQuantity,
                 last_movement_at: new Date().toISOString(),
@@ -204,7 +204,7 @@ export async function importInvoice(xmlContent: string): Promise<InvoiceImportRe
             if (!line.matchedMaterialId) continue;
 
             // Create stock movement (IN)
-            const { error: movementError } = await supabase.from('stock_movements').insert({
+            const { error: movementError } = await supabase.from('kts_stock_movements').insert({
                 material_id: line.matchedMaterialId,
                 movement_type: 'in',
                 quantity: line.quantity || 0,
@@ -225,7 +225,7 @@ export async function importInvoice(xmlContent: string): Promise<InvoiceImportRe
 
             // Update stock table
             const { data: currentStock } = await supabase
-                .from('stock')
+                .from('kts_stock')
                 .select('quantity')
                 .eq('material_id', line.matchedMaterialId)
                 .single();
@@ -233,7 +233,7 @@ export async function importInvoice(xmlContent: string): Promise<InvoiceImportRe
             const currentQuantity = currentStock?.quantity || 0;
             const newQuantity = currentQuantity + (line.quantity || 0);
 
-            await supabase.from('stock').upsert({
+            await supabase.from('kts_stock').upsert({
                 material_id: line.matchedMaterialId,
                 quantity: newQuantity,
                 last_movement_at: new Date().toISOString(),
@@ -274,11 +274,11 @@ export async function getInvoiceHistory(limit = 50) {
 
         // Get stock movements with reference_type = 'invoice'
         const { data, error } = await supabase
-            .from('stock_movements')
+            .from('kts_stock_movements')
             .select(`
                 *,
-                material:materials(id, code, name, unit),
-                created_by_user:users!stock_movements_created_by_fkey(id, name)
+                material:kts_materials(id, code, name, unit),
+                created_by_user:kts_users!stock_movements_created_by_fkey(id, name)
             `)
             .eq('reference_type', 'invoice')
             .order('created_at', { ascending: false })
@@ -332,7 +332,7 @@ export async function deleteInvoiceImport(invoiceNumber: string) {
 
         // 1. Get all stock movements for this invoice
         const { data: movements, error: fetchError } = await supabase
-            .from('stock_movements')
+            .from('kts_stock_movements')
             .select('*')
             .eq('reference_type', 'invoice')
             .eq('reference_id', invoiceNumber);
@@ -349,7 +349,7 @@ export async function deleteInvoiceImport(invoiceNumber: string) {
         for (const movement of movements) {
             // Get current stock
             const { data: currentStock } = await supabase
-                .from('stock')
+                .from('kts_stock')
                 .select('quantity')
                 .eq('material_id', movement.material_id)
                 .single();
@@ -364,7 +364,7 @@ export async function deleteInvoiceImport(invoiceNumber: string) {
 
                 // Update stock
                 await supabase
-                    .from('stock')
+                    .from('kts_stock')
                     .update({
                         quantity: Math.max(0, rollbackQuantity), // Never go negative
                         last_updated: new Date().toISOString(),
@@ -376,7 +376,7 @@ export async function deleteInvoiceImport(invoiceNumber: string) {
 
         // 3. Delete stock movements
         const { error: deleteError } = await supabase
-            .from('stock_movements')
+            .from('kts_stock_movements')
             .delete()
             .eq('reference_type', 'invoice')
             .eq('reference_id', invoiceNumber);

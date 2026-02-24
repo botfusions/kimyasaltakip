@@ -186,7 +186,7 @@ export type Database = {
           },
         ]
       }
-      audit_logs: {
+      kts_audit_logs: {
         Row: {
           action: string
           created_at: string
@@ -231,7 +231,7 @@ export type Database = {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]
@@ -481,7 +481,7 @@ export type Database = {
           },
         ]
       }
-      materials: {
+      kts_materials: {
         Row: {
           category: string | null
           code: string
@@ -577,7 +577,7 @@ export type Database = {
         }
         Relationships: []
       }
-      production_logs: {
+      kts_production_logs: {
         Row: {
           actual_duration_minutes: number | null
           batch_number: string
@@ -640,26 +640,26 @@ export type Database = {
             foreignKeyName: "production_logs_operator_id_fkey"
             columns: ["operator_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "production_logs_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
-            referencedRelation: "recipes"
+            referencedRelation: "kts_recipes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "production_logs_supervisor_id_fkey"
             columns: ["supervisor_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]
       }
-      production_materials: {
+      kts_production_materials: {
         Row: {
           actual_quantity: number | null
           created_at: string
@@ -707,19 +707,19 @@ export type Database = {
             foreignKeyName: "production_materials_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "materials"
+            referencedRelation: "kts_materials"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "production_materials_production_log_id_fkey"
             columns: ["production_log_id"]
             isOneToOne: false
-            referencedRelation: "production_logs"
+            referencedRelation: "kts_production_logs"
             referencedColumns: ["id"]
           },
         ]
       }
-      products: {
+      kts_products: {
         Row: {
           base_color: string | null
           code: string
@@ -758,7 +758,7 @@ export type Database = {
             foreignKeyName: "products_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]
@@ -823,7 +823,7 @@ export type Database = {
           },
         ]
       }
-      recipe_items: {
+      kts_recipe_items: {
         Row: {
           created_at: string
           id: string
@@ -859,19 +859,19 @@ export type Database = {
             foreignKeyName: "recipe_items_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "materials"
+            referencedRelation: "kts_materials"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "recipe_items_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
-            referencedRelation: "recipes"
+            referencedRelation: "kts_recipes"
             referencedColumns: ["id"]
           },
         ]
       }
-      recipes: {
+      kts_recipes: {
         Row: {
           approved_at: string | null
           approved_by: string | null
@@ -1004,35 +1004,35 @@ export type Database = {
             foreignKeyName: "recipes_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "recipes_approved_by_manager_fkey"
             columns: ["approved_by_manager"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "recipes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "recipes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "kts_products"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "recipes_usage_type_id_fkey"
             columns: ["usage_type_id"]
             isOneToOne: false
-            referencedRelation: "usage_types"
+            referencedRelation: "kts_usage_types"
             referencedColumns: ["id"]
           },
         ]
@@ -1088,7 +1088,7 @@ export type Database = {
           },
         ]
       }
-      settings: {
+      kts_settings: {
         Row: {
           category: string
           created_at: string
@@ -1130,12 +1130,12 @@ export type Database = {
             foreignKeyName: "settings_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]
       }
-      stock: {
+      kts_stock: {
         Row: {
           id: string
           last_movement_at: string | null
@@ -1171,19 +1171,19 @@ export type Database = {
             foreignKeyName: "stock_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: true
-            referencedRelation: "materials"
+            referencedRelation: "kts_materials"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stock_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]
       }
-      stock_movements: {
+      kts_stock_movements: {
         Row: {
           batch_number: string | null
           created_at: string
@@ -1234,19 +1234,19 @@ export type Database = {
             foreignKeyName: "stock_movements_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stock_movements_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "materials"
+            referencedRelation: "kts_materials"
             referencedColumns: ["id"]
           },
         ]
       }
-      usage_rules: {
+      kts_usage_rules: {
         Row: {
           created_at: string
           error_message: string | null
@@ -1291,19 +1291,19 @@ export type Database = {
             foreignKeyName: "usage_rules_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "materials"
+            referencedRelation: "kts_materials"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "usage_rules_usage_type_id_fkey"
             columns: ["usage_type_id"]
             isOneToOne: false
-            referencedRelation: "usage_types"
+            referencedRelation: "kts_usage_types"
             referencedColumns: ["id"]
           },
         ]
       }
-      usage_types: {
+      kts_usage_types: {
         Row: {
           color_code: string | null
           created_at: string
@@ -1383,7 +1383,7 @@ export type Database = {
           },
         ]
       }
-      users: {
+      kts_users: {
         Row: {
           created_at: string
           created_by: string | null
@@ -1428,7 +1428,7 @@ export type Database = {
             foreignKeyName: "users_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "kts_users"
             referencedColumns: ["id"]
           },
         ]

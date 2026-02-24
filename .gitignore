@@ -104,3 +104,24 @@ tessdata/
 
 # Archive folder (internal development docs)
 # archive/
+
+# ============================================
+# Supabase Local
+# ============================================
+supabase/.temp/
+
+# ============================================
+# Security - Sensitive Test Scripts
+# ============================================
+# Scripts with hardcoded credentials (for local testing only)
+frontend/verify_refactor.js
+frontend/check_role.js
+frontend/create_test_user.js
+frontend/list_users.js
+frontend/try_rpc_exec.js
+frontend/apply_schema_fix_draft.js
+
+# ============================================
+# Netlify Local
+# ============================================
+.netlify/

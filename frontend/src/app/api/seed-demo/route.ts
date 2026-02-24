@@ -19,7 +19,7 @@ export async function GET() {
         } else {
             // Fallback to first user
             const { data: anyUser, error: userError } = await supabase
-                .from('users')
+                .from('kts_users')
                 .select('id')
                 .limit(1)
                 .single();
@@ -40,7 +40,7 @@ export async function GET() {
         // 2. Get or Create Usage Type (Üretim)
         let usageTypeId: string;
         const { data: existingUsageType } = await supabase
-            .from('usage_types')
+            .from('kts_usage_types')
             .select('id')
             .eq('name', 'Üretim')
             .single();
@@ -49,7 +49,7 @@ export async function GET() {
             usageTypeId = existingUsageType.id;
         } else {
             const { data: newUsageType, error: usageTypeError } = await supabase
-                .from('usage_types')
+                .from('kts_usage_types')
                 .insert({
                     name: 'Üretim',
                     description: 'Demo için oluşturuldu',
@@ -79,7 +79,7 @@ export async function GET() {
 
         for (const mat of materials) {
             const { data: existing } = await supabase
-                .from('materials')
+                .from('kts_materials')
                 .select('id')
                 .eq('code', mat.code)
                 .single();
@@ -88,7 +88,7 @@ export async function GET() {
 
             if (!matId) {
                 const { data: newMat, error: createError } = await supabase
-                    .from('materials')
+                    .from('kts_materials')
                     .insert({
                         ...mat,
                         is_active: true,
@@ -118,7 +118,7 @@ export async function GET() {
 
         let productId: string;
         const { data: existingProduct } = await supabase
-            .from('products')
+            .from('kts_products')
             .select('id')
             .eq('code', productData.code)
             .single();
@@ -126,12 +126,12 @@ export async function GET() {
         if (existingProduct) {
             productId = existingProduct.id;
             // Update ownership
-            await supabase.from('products')
+            await supabase.from('kts_products')
                 .update({ created_by: userId })
                 .eq('id', productId);
         } else {
             const { data: newProduct, error: productError } = await supabase
-                .from('products')
+                .from('kts_products')
                 .insert(productData)
                 .select('id')
                 .single();
@@ -158,7 +158,7 @@ export async function GET() {
         // Check if recipe exists
         let recipeId: string;
         const { data: existingRecipe } = await supabase
-            .from('recipes')
+            .from('kts_recipes')
             .select('id')
             .eq('recipe_name_no', recipeData.recipe_name_no)
             .single();
@@ -166,12 +166,12 @@ export async function GET() {
         if (existingRecipe) {
             recipeId = existingRecipe.id;
             // Update ownership to ensure visibility
-            await supabase.from('recipes')
+            await supabase.from('kts_recipes')
                 .update({ created_by: userId })
                 .eq('id', recipeId);
         } else {
             const { data: newRecipe, error: recipeError } = await supabase
-                .from('recipes')
+                .from('kts_recipes')
                 .insert(recipeData)
                 .select('id')
                 .single();
@@ -194,7 +194,7 @@ export async function GET() {
         ];
 
         // First delete existing items for this recipe to avoid duplicates
-        await supabase.from('recipe_items').delete().eq('recipe_id', recipeId);
+        await supabase.from('kts_recipe_items').delete().eq('recipe_id', recipeId);
 
         let sortOrder = 1;
         for (const item of items) {
@@ -204,7 +204,7 @@ export async function GET() {
             // Force unit to 'kg' as it's the only one proven to work with the constraint
             const unit = 'kg';
 
-            const { error: itemError } = await supabase.from('recipe_items').insert({
+            const { error: itemError } = await supabase.from('kts_recipe_items').insert({
                 recipe_id: recipeId,
                 material_id: matId,
                 quantity: item.quantity,

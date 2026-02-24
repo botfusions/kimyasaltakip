@@ -5,12 +5,14 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 ## ✨ Özellikler
 
 ### 🔐 Kullanıcı Yönetimi ve Güvenlik
+
 - Role-based access control (Admin, Lab, Operator, Customer)
 - Signature ID sistemi (Lab kullanıcıları için 4-6 haneli PIN)
 - Secure authentication via Supabase
 - Audit logging tüm kritik işlemler için
 
 ### 📦 Malzeme Yönetimi (Materials Management)
+
 - Tam CRUD işlemleri (Create, Read, Update, Delete)
 - Malzeme tipleri: Hammadde, Boya, Diğer
 - Stok limitleri (min/max)
@@ -19,6 +21,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - Gelişmiş arama ve filtreleme
 
 ### 🧪 Ürün Yönetimi (Products Management)
+
 - Tam CRUD işlemleri
 - Ürün tipleri: Boya, Vernik, Diğer
 - Hedef pH ve yoğunluk değerleri
@@ -27,6 +30,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - Aktif/Pasif durum kontrolü
 
 ### 📋 Reçete Yönetimi (Recipe Management)
+
 - **Reçete Oluşturma ve Düzenleme:**
   - Dinamik malzeme seçici
   - Otomatik yüzde hesaplama
@@ -46,7 +50,20 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Onaylandı (Approved)
   - Revize Gerekli (Rejected)
 
+- **Otomatik Entegrasyonlar:** ✨ YENİ
+  - Onay anında otomatik stok düşümü (FIFO/LIFO)
+  - Üretim kaydı (Production Log) oluşturma
+  - İzlenebilirlik için üretim-stok bağlantısı
+
+### 🛡️ Uyumluluk Yönetimi (Compliance) ✨ YENİ
+
+- **MRSL/RSL Kontrolü:**
+  - Reçetelerin yasaklı madde listesine (MRSL) göre otomatik taranması
+  - Limit aşımı durumunda uyarı/blokaj
+  - ZDHC uyumluluk altyapısı
+
 ### 📦 Stok Yönetimi (Stock Management) ✨ YENİ
+
 - **Manuel Stok Hareketleri:**
   - 3 hareket tipi: Giriş (📥), Çıkış (📤), Düzeltme (⚖️)
   - Parti/lot numarası takibi
@@ -65,7 +82,13 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Toplam stok miktarı
   - Hareket geçmişi
 
+- **Raporlama:** ✨ YENİ
+  - Aylık sarfiyat raporu (CSV)
+  - Üretim bazlı tüketim analizi
+  - Server-side rapor oluşturma altyapısı
+
 ### 🧾 E-Fatura Entegrasyonu ✨ YENİ
+
 - **XML Parser:**
   - UBL-TR e-Fatura standardı desteği
   - Otomatik fatura bilgisi çıkarma
@@ -82,6 +105,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Fatura geçmişi ve silme/rollback
 
 ### 📊 Audit ve Takip
+
 - Tüm veri değişiklikleri loglanır
 - Kim, ne zaman, ne yaptı takibi
 - Sistem güvenliği ve denetlenebilirlik
@@ -104,6 +128,7 @@ cp .env.local.example .env.local
 ```
 
 Gerekli ortam değişkenleri:
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase proje URL'si
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon anahtarı
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role anahtarı
@@ -128,8 +153,13 @@ supabase/migrations/20260130000004_add_signature_id.sql
 # Phase 5: Stok ve Recipe güncellemeleri
 supabase/migrations/20260207000001_add_missing_recipe_columns.sql
 
-# Kritik stok view
-supabase/migrations/20260208000001_create_critical_stock_view.sql
+# Phase 7: Veritabanı Tablo Öneki (KTS)
+supabase/migrations/20260216000002_rename_tables_kts.sql
+supabase/migrations/20260216000003_fix_functions_and_rls.sql
+
+# Phase 6: Compliance & Stock Logic
+supabase/migrations/20260130000005_compliance_schema.sql
+supabase/migrations/20260130000007_stock_management.sql
 ```
 
 **Not:** Tüm migration'ları sırasıyla çalıştırdığınızdan emin olun.
@@ -209,6 +239,7 @@ Lab kullanıcıları için özel PIN sistemi:
 ## 🗺️ Roadmap
 
 ### ✅ Tamamlanan (Phase 1-5)
+
 - [x] Authentication & Authorization (Supabase Auth)
 - [x] User Management (with Signature ID & Password validation)
 - [x] Materials Management
@@ -219,15 +250,19 @@ Lab kullanıcıları için özel PIN sistemi:
 - [x] **Stock Management** (Manuel giriş/çıkış/düzeltme)
 - [x] **E-Fatura Entegrasyonu** (XML Parser + OCR)
 - [x] **Kritik Stok Uyarı Sistemi**
+- [x] **Compliance (Uyumluluk) Kontrolleri**
+- [x] **Otomatik Stok Düşümü & Üretim Kaydı**
 - [x] Dark Mode Support (Tailwind + next-themes)
 
 ### 🚧 Geliştiriliyor (Hafta 2)
+
 - [ ] RLS Politikalarını Tamamla
 - [ ] Error Handling & Validation (Zod)
 - [ ] Production Deploy Hazırlığı
 - [ ] Beta Test
 
 ### 📋 Planlanan (Phase 6-8)
+
 - [ ] Üretim Modülü (Production Tracking)
 - [ ] Raporlama Dashboard (Charts)
 - [ ] Maliyet Hesaplama
@@ -254,6 +289,7 @@ Bu proje özel lisans altındadır.
 ## 📈 Teknoloji Stack
 
 ### Frontend
+
 - **Next.js 14** (App Router)
 - **React 18** (Server Components)
 - **TypeScript**
@@ -261,11 +297,13 @@ Bu proje özel lisans altındadır.
 - **next-themes** (Theme management)
 
 ### Backend & Database
+
 - **Supabase** (PostgreSQL)
 - **Supabase Auth** (Row Level Security)
 - **Server Actions** (Form handling)
 
 ### Entegrasyonlar
+
 - **JsBarcode** (Barkod oluşturma)
 - **fast-xml-parser** (E-Fatura XML)
 - **Tesseract OCR** (Fatura OCR - Python)
@@ -273,13 +311,13 @@ Bu proje özel lisans altındadır.
 - **Telegram Bot** (Notifications)
 
 ### Developer Tools
+
 - **Zod** (Validation)
 - **ESLint** (Code quality)
 - **TypeScript** (Type safety)
 
 ---
 
-**Son Güncelleme:** 8 Şubat 2026
-**Versiyon:** Phase 5 - Stok Yönetimi & E-Fatura Release
-**İlerleme:** %72 → %75 (Hedef: %100)
-
+**Son Güncelleme:** 18 Şubat 2026
+**Versiyon:** Phase 6 - Compliance & Stock Automation
+**İlerleme:** %75 → %85 (Hedef: %100)

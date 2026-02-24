@@ -31,7 +31,7 @@ export async function getProducts(filters?: {
     const supabase = await createClient();
 
     let query = supabase
-        .from('products')
+        .from('kts_products')
         .select('*')
         .order('name', { ascending: true });
 
@@ -64,7 +64,7 @@ export async function getProductById(productId: string) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from('products')
+        .from('kts_products')
         .select('*')
         .eq('id', productId)
         .single();
@@ -98,7 +98,7 @@ export async function createProduct(formData: FormData) {
 
     // Insert product
     const { data, error } = await supabase
-        .from('products')
+        .from('kts_products')
         .insert({
             ...productData,
             created_by: currentUser.id,
@@ -114,7 +114,7 @@ export async function createProduct(formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'products',
         record_id: data.id,
         action: 'INSERT',
@@ -149,14 +149,14 @@ export async function updateProduct(productId: string, formData: FormData) {
 
     // Get old data for audit
     const { data: oldData } = await supabase
-        .from('products')
+        .from('kts_products')
         .select('*')
         .eq('id', productId)
         .single();
 
     // Update product
     const { data, error } = await supabase
-        .from('products')
+        .from('kts_products')
         .update({
             ...productData,
             updated_at: new Date().toISOString(),
@@ -173,7 +173,7 @@ export async function updateProduct(productId: string, formData: FormData) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'products',
         record_id: productId,
         action: 'UPDATE',
@@ -196,7 +196,7 @@ export async function toggleProductStatus(productId: string) {
 
     // Get current status
     const { data: product } = await supabase
-        .from('products')
+        .from('kts_products')
         .select('is_active')
         .eq('id', productId)
         .single();
@@ -209,7 +209,7 @@ export async function toggleProductStatus(productId: string) {
 
     // Update status
     const { error } = await supabase
-        .from('products')
+        .from('kts_products')
         .update({
             is_active: newStatus,
             updated_at: new Date().toISOString(),
@@ -221,7 +221,7 @@ export async function toggleProductStatus(productId: string) {
     }
 
     // Log audit
-    await supabase.from('audit_logs').insert({
+    await supabase.from('kts_audit_logs').insert({
         table_name: 'products',
         record_id: productId,
         action: 'UPDATE',

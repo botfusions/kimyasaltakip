@@ -28,19 +28,19 @@ export async function GET() {
 
         // Products
         const { count: productsCount, error: productsError } = await supabase
-            .from('products')
+            .from('kts_products')
             .select('*', { count: 'exact', head: true });
         debugInfo.rlsCheck.products = { count: productsCount, error: productsError?.message };
 
         // Materials
         const { count: materialsCount, error: materialsError } = await supabase
-            .from('materials')
+            .from('kts_materials')
             .select('*', { count: 'exact', head: true });
         debugInfo.rlsCheck.materials = { count: materialsCount, error: materialsError?.message };
 
         // Recipes
         const { count: recipesCount, error: recipesError } = await supabase
-            .from('recipes')
+            .from('kts_recipes')
             .select('*', { count: 'exact', head: true });
         debugInfo.rlsCheck.recipes = { count: recipesCount, error: recipesError?.message };
 
@@ -62,9 +62,9 @@ export async function GET() {
         const adminClient = createAdminClient();
 
         // Check recipes count (Admin)
-        const { count: adminRecipesCount } = await adminClient.from('recipes').select('*', { count: 'exact', head: true });
-        const { count: adminProductsCount } = await adminClient.from('products').select('*', { count: 'exact', head: true });
-        const { count: adminMaterialsCount } = await adminClient.from('materials').select('*', { count: 'exact', head: true });
+        const { count: adminRecipesCount } = await adminClient.from('kts_recipes').select('*', { count: 'exact', head: true });
+        const { count: adminProductsCount } = await adminClient.from('kts_products').select('*', { count: 'exact', head: true });
+        const { count: adminMaterialsCount } = await adminClient.from('kts_materials').select('*', { count: 'exact', head: true });
 
         debugInfo.adminCheck = {
             recipes: adminRecipesCount,
