@@ -1,11 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sendTestEmail } from '@/app/actions/test-email';
+import { getSettingByKey } from '@/app/actions/settings';
 
 export default function TestEmailPage() {
     const [loading, setLoading] = useState(false);
+    const [recipients, setRecipients] = useState<string>('Yükleniyor...');
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+    useEffect(() => {
+        const fetchRecipients = async () => {
+            const { data } = await getSettingByKey('REPORT_RECEIVER_EMAILS');
+            if (data) {
+                setRecipients(data);
+            } else {
+                setRecipients('aziz.guc@goldstarteks.com'); // Fallback
+            }
+        };
+        fetchRecipients();
+    }, []);
 
     const handleSendTest = async () => {
         setLoading(true);
@@ -33,7 +47,7 @@ export default function TestEmailPage() {
                     <h2 className="text-lg font-semibold mb-2">Email Gönderimi Test</h2>
                     <p className="text-gray-600 text-sm mb-4">
                         Resend API entegrasyonunuzun çalışıp çalışmadığını test edin.
-                        Test email <strong>cenk.tokgoz@gmail.com</strong> adresine gönderilecek.
+                        Test email <strong>{recipients}</strong> adresine gönderilecek.
                     </p>
                 </div>
 
@@ -64,7 +78,7 @@ export default function TestEmailPage() {
                     <div className="text-sm text-gray-600 space-y-1">
                         <p><strong>API Key:</strong> re_imv7Z... (gizli)</p>
                         <p><strong>Gönderici:</strong> onboarding@resend.dev</p>
-                        <p><strong>Alıcı:</strong> cenk.tokgoz@gmail.com</p>
+                        <p><strong>Alıcı:</strong> {recipients}</p>
                     </div>
                 </div>
             </div>

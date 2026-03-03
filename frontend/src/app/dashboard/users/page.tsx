@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { getUsers } from '@/app/actions/users';
 import UserManagementClient from '@/components/users/UserManagementClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function UsersPage() {
     // Fetch initial users data
     const result = await getUsers();

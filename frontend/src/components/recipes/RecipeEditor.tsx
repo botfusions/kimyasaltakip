@@ -532,7 +532,7 @@ export default function RecipeEditor({ products, recipeId }: Props) {
                     {/* Items Table */}
                     {items.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                            Henüz malzeme eklenmedi. "Yeni Satır Ekle" butonunu kullanarak malzeme ekleyebilirsiniz.
+                            Henüz malzeme eklenmedi. &quot;Yeni Satır Ekle&quot; butonunu kullanarak malzeme ekleyebilirsiniz.
                         </div>
                     ) : (
                         <div className="overflow-x-auto">

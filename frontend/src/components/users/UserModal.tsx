@@ -207,7 +207,7 @@ export default function UserModal({ user, onClose }: Props) {
                                     {user.signature_id}
                                 </p>
                                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                    ⚠️ Bu ID'yi güvenli tutun - reçete onayı için gereklidir
+                                    ⚠️ Bu ID&apos;yi güvenli tutun - reçete onayı için gereklidir
                                 </p>
                             </div>
                             <button

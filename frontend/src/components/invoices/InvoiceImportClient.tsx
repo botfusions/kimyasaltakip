@@ -302,7 +302,7 @@ export default function InvoiceImportClient({ currentUser }: InvoiceImportClient
                             <li><strong>JPEG/PNG</strong>: Fotoğraf veya tarama - OCR ile işlenir</li>
                         </ul>
                     </li>
-                    <li>"Faturayı İçe Aktar" butonuna tıklayın</li>
+                    <li>&quot;Faturayı İçe Aktar&quot; butonuna tıklayın</li>
                     <li>PDF/JPEG için OCR işlemi yapılır (birkaç saniye sürebilir)</li>
                     <li>Sistem otomatik olarak fatura satırlarını malzemelerle eşleştirir</li>
                     <li>Eşleşen ürünler için otomatik stok girişi yapılır</li>
