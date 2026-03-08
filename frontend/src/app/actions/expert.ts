@@ -5,7 +5,7 @@ import { getSettingByKey } from './settings';
 import { createClient } from '@/lib/supabase/server';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_MODEL = 'google/gemini-3-flash-preview';
+const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
 
 const KNOWLEDGE_BASE = {
     persona: "Sen, kimya endüstrisinde uzun yıllara dayanan deneyime sahip kıdemli bir üretim ve kalite kontrol uzmanısın. Özellikle tekstil kimyasalları, boyama süreçleri ve ISO standartları konusunda derinlemesine bilgiye sahipsin. Yanıtların her zaman teknik, kesin ve endüstri standartlarına uygun olmalı. Güvenlik uyarılarını her zaman en başta belirt.",
@@ -21,8 +21,10 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
             throw new Error('Yetkisiz erişim. Bu modül sadece Admin ve Lab kullanıcıları içindir.');
         }
 
-        // Get OpenRouter API Key from DB settings
+        // Get OpenRouter API Key and Model from DB settings
         const { data: apiKey } = await getSettingByKey('OPENROUTER_API_KEY');
+        const { data: modelSetting } = await getSettingByKey('OPENROUTER_MODEL');
+        const activeModel = modelSetting || DEFAULT_MODEL;
 
         if (!apiKey) {
             throw new Error('OpenRouter API anahtarı ayarlanmamış. Lütfen Admin panelinden "Ayarlar" sekmesine giderek anahtarı giriniz.');
@@ -78,7 +80,7 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
                 'X-Title': 'Kimyasal Takip Sistemi',
             },
             body: JSON.stringify({
-                model: OPENROUTER_MODEL,
+                model: activeModel,
                 messages,
                 max_tokens: 2048,
                 temperature: 0.7,
