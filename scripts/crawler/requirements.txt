@@ -1,0 +1,6 @@
+crawl4ai
+supabase
+playwright
+python-dotenv
+sentence-transformers
+torch
