@@ -1,9 +1,10 @@
-name: Kimyasal Takip - Canli Istihbarat Senkronizasyonu
+name: Kimyasal Takip - Canlı İstihbarat Senkronizasyonu
 
 on:
   schedule:
+    # Her gün gece 03:00'te çalışır (UTC)
     - cron: "0 3 * * *"
-  workflow_dispatch:
+  workflow_dispatch: # Manuel tetikleme için
 
 jobs:
   sync-intelligence:
@@ -28,5 +29,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Eğer OpenAI/Gemini embedding kullanacaksanız onları da buraya ekleyin:
+          # OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           python scripts/crawler/sync_intelligence.py

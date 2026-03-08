@@ -30,12 +30,16 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
             throw new Error('OpenRouter API anahtarı ayarlanmamış. Lütfen Admin panelinden "Ayarlar" sekmesine giderek anahtarı giriniz.');
         }
 
-        // Search for relevant chemical data
-        let contextData = "";
+        // Search for relevant data (Hybrid RAG: Chemicals + Intelligence)
+        let chemicalContext = "";
+        let intelligenceContext = "";
+        
+        const supabase = await createClient();
+        const searchTerm = prompt.slice(0, 50).replace(/[^a-zA-Z0-9\s-]/g, '').trim();
+
         try {
-            const searchTerm = prompt.slice(0, 50).replace(/[^a-zA-Z0-9\s-]/g, '').trim();
             if (searchTerm.length >= 2) {
-                const supabase = await createClient();
+                // 1. Search in Chemical Products (SQL ilike)
                 const { data: searchResults } = await supabase
                     .from('chemical_products')
                     .select('product_name, manufacturer, category, general_function, type')
@@ -43,17 +47,31 @@ export async function askExpert(prompt: string, history: { role: string; parts: 
                     .limit(5);
 
                 if (searchResults && searchResults.length > 0) {
-                    contextData = "\n\nVERİTABANINDAN BULUNAN İLGİLİ KİMYASAL ÜRÜNLER:\n" + searchResults.map(r =>
+                    chemicalContext = "\n\nVERİTABANINDAN BULUNAN İLGİLİ KİMYASAL ÜRÜNLER:\n" + searchResults.map(r =>
                         `- Ürün: ${r.product_name}\n  Üretici: ${r.manufacturer || 'Belirtilmemiş'}\n  Kategori: ${r.category || '-'}\n  Fonksiyon: ${r.general_function || '-'}\n  Tip: ${r.type || '-'}`
+                    ).join("\n\n");
+                }
+
+                // 2. Search in Intelligence Data (Simple keyword search for now, vector search requires embedding generation)
+                // Note: Real vector search would happen here if we had an embedding function available in server actions
+                const { data: intelligenceResults } = await supabase
+                    .from('kts_intelligence_data')
+                    .select('title, content, url')
+                    .or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`)
+                    .limit(3);
+
+                if (intelligenceResults && intelligenceResults.length > 0) {
+                    intelligenceContext = "\n\nCANLI İSTİHBARAT VE DIŞ KAYNAKLARDAN BİLGİLER:\n" + intelligenceResults.map(r =>
+                        `- Başlık: ${r.title}\n  İçerik Özeti: ${r.content.substring(0, 300)}...\n  Kaynak: ${r.url}`
                     ).join("\n\n");
                 }
             }
         } catch (searchError) {
-            console.error('Chemical search error:', searchError);
+            console.error('Data search error:', searchError);
         }
 
         // Build system instruction
-        const systemInstruction = `${KNOWLEDGE_BASE.persona}\n\nKullanabileceğin teknik bilgi havuzu:\n${KNOWLEDGE_BASE.chemicals}\n\n${KNOWLEDGE_BASE.iso_standards}\n\n${KNOWLEDGE_BASE.production}${contextData}\n\nYanıtlarını bu teknik verilere dayandır ve her zaman profesyonel teknik format kullan.`;
+        const systemInstruction = `${KNOWLEDGE_BASE.persona}\n\nKullanabileceğin teknik bilgi havuzu:\n${KNOWLEDGE_BASE.chemicals}\n\n${KNOWLEDGE_BASE.iso_standards}\n\n${KNOWLEDGE_BASE.production}${chemicalContext}${intelligenceContext}\n\nYanıtlarını bu teknik verilere dayandır ve her zaman profesyonel teknik format kullan.`;
 
         // Convert history from Gemini format to OpenAI/OpenRouter format
         const messages: { role: string; content: string }[] = [
