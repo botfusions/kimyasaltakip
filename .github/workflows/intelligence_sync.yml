@@ -32,4 +32,4 @@ jobs:
           # Eğer OpenAI/Gemini embedding kullanacaksanız onları da buraya ekleyin:
           # OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python scripts/crawler/sync_intelligence.py
+          python ./scripts/crawler/sync_intelligence.py
