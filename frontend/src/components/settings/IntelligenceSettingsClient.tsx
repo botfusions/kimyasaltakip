@@ -109,11 +109,10 @@ export default function IntelligenceSettingsClient() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-blue-600" />
-            Canlı İstihbarat Kaynakları
+            AI Bilgi Bankası (RAG) Kaynakları
           </h3>
           <p className="text-sm text-gray-500">
-            AI Uzman Botu&apos;nun canlı olarak takip edeceği dış bilgi
-            kaynaklarını yönetin.
+            AI Uzman Botu&apos;nun öğrenme ve yanıtlama sürecinde (RAG) kullanılacak web kaynaklarını yönetin.
           </p>
         </div>
         <Button
@@ -187,7 +186,7 @@ export default function IntelligenceSettingsClient() {
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Kaynağı Tanımla ve Takibe Başla"
+                  "Bilgi Bankasına Ekle ve Taramayı Başlat"
                 )}
               </Button>
             </div>
@@ -299,10 +298,9 @@ export default function IntelligenceSettingsClient() {
       <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-xl flex gap-3">
         <BrainCircuit className="w-5 h-5 text-yellow-600 shrink-0" />
         <p className="text-xs text-yellow-800 dark:text-yellow-200">
-          <strong>Crawl4AI Notu:</strong> Dış kaynaklar Markdown formatına
-          dönüştürülerek vektör veritabanına kaydedilir. AI Uzman Botu bu
-          verileri &quot;Long-term Knowledge&quot; olarak kullanır. Tarama
-          işlemi kaynak yoğunluğu nedeniyle arka planda yürütülür.
+          <strong>RAG (Bilgi Bankası) Notu:</strong> Eklediğiniz URL&apos;ler Crawl4AI ile taranır, Markdown formatına
+          dönüştürülür ve Supabase Vector (pgvector) veritabanına kaydedilir. AI Uzman Botu bu
+          verileri sorularınızı yanıtlarken &quot;Uzun Süreli Hafıza&quot; olarak kullanır.
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { getCurrentUser } from "../actions/auth";
 import DashboardSidebar from "../../components/dashboard/Sidebar";
 import DashboardHeader from "../../components/dashboard/Header";
 import { ThemeProvider } from "../../components/ThemeProvider";
+import ChatBot from "../../components/chat/ChatBot";
 
 export default async function DashboardLayout({
   children,
@@ -28,6 +29,7 @@ export default async function DashboardLayout({
             disableTransitionOnChange
           >
             {children}
+            <ChatBot />
           </ThemeProvider>
         </main>
       </div>

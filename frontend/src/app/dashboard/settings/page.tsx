@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { BrainCircuit, ArrowRight } from "lucide-react";
 import { getSettings, updateSettings } from "../../actions/settings";
 
 interface SettingItem {
@@ -88,6 +90,28 @@ export default function SettingsManagementPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">⚙️ Sistem Ayarları</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden group">
+          <div className="relative z-10">
+            <div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm">
+              <BrainCircuit className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Bilgi Bankası (RAG)</h3>
+            <p className="text-blue-100 text-sm mb-6">
+              AI Uzman Botu&apos;nun öğrenmesi için web siteleri, standartlar ve 
+              teknik dokümanlar ekleyerek RAG veri bankasını besleyin.
+            </p>
+            <Link
+              href="/dashboard/settings/intelligence"
+              className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors"
+            >
+              Yönetime Git <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500"></div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email Ayarları */}
@@ -192,3 +216,4 @@ export default function SettingsManagementPage() {
     </div>
   );
 }
+

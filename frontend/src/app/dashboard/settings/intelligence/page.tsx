@@ -10,11 +10,10 @@ export default function IntelligenceSettingsPage() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          İstihbarat ve Dış Kaynaklar
+          Bilgi Bankası (RAG) Kaynakları
         </h1>
         <p className="text-gray-500">
-          Sistemin dış dünyadaki gelişmeleri takip etmesini sağlayan canlı veri
-          kaynaklarını yönetin.
+          AI Uzman Botu&apos;nun soruları cevaplarken kullandığı (RAG - Retrieval Augmented Generation) veri kaynaklarını yönetin.
         </p>
       </div>
 

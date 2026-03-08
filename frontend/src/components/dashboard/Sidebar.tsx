@@ -61,6 +61,12 @@ export default function DashboardSidebar({ user }: SidebarProps) {
       icon: "📊",
       roles: ["admin", "lab", "production"],
     },
+    {
+      href: "/dashboard/settings/intelligence",
+      label: "Bilgi Bankası (RAG)",
+      icon: "📚",
+      roles: ["admin"],
+    },
   ];
 
   const filteredMenuItems = menuItems.filter((item) =>

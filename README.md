@@ -142,6 +142,21 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Miktar ve tutar bilgileri
   - Regex bazlı Türkçe parsing
 
+### 🤖 RAG Temelli Akıllı Danışman (YENİ! ✨)
+
+- **WhatsApp Tarzı Arayüz**
+  - Sağ alt köşede her zaman erişilebilir yüzen buton
+  - Modern ve kullanıcı dostu mesajlaşma arayüzü
+- **Strict RAG Politikası**
+  - Sadece tanımlanmış bilgi bankası (Knowledge Base) üzerinden yanıt verme
+  - Halüsinasyonları önleyen, güvenilir teknik bilgi desteği
+- **Vektör Veritabanı Entegrasyonu**
+  - Supabase Vector (pgvector) ile hızlı ve alakalı bilgi arama
+  - Dokümanların vektörize edilerek anlık sorgulanması
+- **Teknik Destek ve Formül Yardımı**
+  - Reçete uyumluluk kuralları hakkında anlık bilgi
+  - Kimyasal kısıtlamalar ve MRLS/ZDHC standartları sorgulama
+
 ### 🔄 Üretim Takibi
 
 - Otomatik **stok düşümü** üretim tamamlandığında
