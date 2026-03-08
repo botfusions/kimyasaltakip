@@ -9,12 +9,14 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 ## ✨ Özellikler
 
 ### 🔐 Kullanıcı Yönetimi ve Güvenlik
+
 - **Role-based access control** (Admin, Lab, Production, Warehouse)
 - **Signature ID sistemi** - Lab kullanıcıları için 4-6 haneli PIN
 - **Secure authentication** via Supabase Auth
 - **Audit logging** - Tüm kritik işlemler için otomatik kayıt
 
 ### 📦 Malzeme Yönetimi
+
 - Tam CRUD işlemleri (Create, Read, Update, Delete)
 - **Kategori bazlı yönetim** (Hammadde, Boya, Kimyasal, vb.)
 - **Gerçek zamanlı stok takibi** ve otomatik düşüm
@@ -25,6 +27,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - Birim yönetimi (kg, g, l, ml, piece)
 
 ### 🧪 Ürün Yönetimi
+
 - Tam CRUD işlemleri
 - Ürün kodu ve isim yönetimi
 - **Base color** (Ana renk) tanımlama
@@ -34,6 +37,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 ### 📋 Reçete Yönetimi
 
 #### Reçete Oluşturma ve Düzenleme
+
 - **Esnek Ürün Seçimi** - Ürünlü veya ürünsüz reçete oluşturma
 - **Boyahane Üretim Takip Formu** - İş emri, müşteri, renk ve proses detayları
 - **Dinamik malzeme seçici** - Sürükle-bırak ile kolay düzenleme
@@ -41,27 +45,31 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - **Miktar ve oran doğrulama**
 - **Versiyon kodu yönetimi** - Her reçete değişikliği izlenebilir
 - **Otomatik planlama tarihi** - Bugünün tarihi otomatik atanır (salt okunur)
-39: - **Otomatik Uyumluluk Kontrolü** - MRLS (ZDHC/Oeko-Tex) veritabanına göre otomatik tarama
-40: - **Yönetici Onay Akışı** - Sistem kontrolü sonrası yönetici onayına sunulma
+  39: - **Otomatik Uyumluluk Kontrolü** - MRLS (ZDHC/Oeko-Tex) veritabanına göre otomatik tarama
+  40: - **Yönetici Onay Akışı** - Sistem kontrolü sonrası yönetici onayına sunulma
 
 #### Signature ID İle Onay Sistemi
+
 - Lab kullanıcıları **PIN** ile onaylar
 - Müşteri kabul sonrası **dijital imza**
 - Onaylanmış reçeteler **immutable** (değiştirilemez)
 
 #### Durum Yönetimi
+
 - ✍️ **Taslak** (Draft)
 - ⏳ **Müşteri Bekliyor** (Pending)
 - ✅ **Onaylandı** (Approved)
 - ❌ **Revize Gerekli** (Rejected)
 
 ### 📊 Gerçek Zamanlı Dashboard
+
 - **Anlık stok seviyeleri** görüntüleme
 - **Kritik stok uyarıları** - Minimum seviyenin altındaki malzemeler
 - **Toplam malzeme** ve stok miktarı istatistikleri
 - **Supabase Realtime** ile canlı güncelleme (sayfa yenilemeden)
 
 ### 📧 Email ve Bildirim Sistemi
+
 - **Resend API** entegrasyonu
 - Reçete onaylandığında **otomatik bildirim**
 - **Aylık kullanım raporları** (CSV formatında)
@@ -69,12 +77,14 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
 - Muhasebe, yönetim gibi farklı departmanlara toplu gönderim
 
 ### ⚙️ Admin Paneli
+
 - **Sistem ayarları yönetimi** (`/dashboard/settings`)
 - Email alıcıları düzenleme (virgülle ayrılmış liste)
 - **Resend API key** yönetimi
 - Gönderici email adresi yapılandırması
 
 ### 📊 Stok Yönetimi Sistemi (YENİ! ✨)
+
 - **Gerçek Zamanlı Stok Dashboard**
   - Toplam malzeme sayısı
   - Kritik stok uyarı sayısı
@@ -109,6 +119,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Kategori bazlı filtreleme
 
 ### 📄 E-Fatura Entegrasyonu (YENİ! ✨)
+
 - **Çoklu Format Desteği**
   - XML (UBL-TR e-Fatura) - %100 doğru
   - PDF - OCR ile %85-95 doğru
@@ -132,6 +143,7 @@ Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi
   - Regex bazlı Türkçe parsing
 
 ### 🔄 Üretim Takibi
+
 - Otomatik **stok düşümü** üretim tamamlandığında
 - **Parti numarası** bazlı izlenebilirlik
 - **Malzeme kullanım** detayları ve raporları
@@ -217,6 +229,7 @@ Toplam: 100 kg = %100 ✅
 ```
 
 **Adımlar:**
+
 1. `/dashboard/recipes` → "Yeni Reçete Oluştur"
 2. Ürün seçin: **Mavi Boya**
 3. Malzemeleri ekleyin (yukarıdaki tablo)
@@ -329,19 +342,19 @@ KİMYASAL TAKİP/
 
 ## 🛠️ Teknoloji Stack
 
-| Kategori | Teknoloji |
-|----------|-----------|
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript |
-| **UI/UX** | Tailwind CSS, Headless UI, Heroicons |
-| **Backend** | Next.js Server Actions, Supabase (PostgreSQL) |
-| **Auth** | Supabase Auth (Row Level Security) |
-| **Realtime** | Supabase Realtime |
-| **Email** | Resend API |
-| **OCR** | Tesseract OCR, Python |
-| **PDF Processing** | PyMuPDF, pdf2image |
-| **XML Parser** | fast-xml-parser |
-| **State** | Zustand, React Query |
-| **Validation** | Zod |
+| Kategori           | Teknoloji                                     |
+| ------------------ | --------------------------------------------- |
+| **Frontend**       | Next.js 14 (App Router), React 18, TypeScript |
+| **UI/UX**          | Tailwind CSS, Headless UI, Heroicons          |
+| **Backend**        | Next.js Server Actions, Supabase (PostgreSQL) |
+| **Auth**           | Supabase Auth (Row Level Security)            |
+| **Realtime**       | Supabase Realtime                             |
+| **Email**          | Resend API                                    |
+| **OCR**            | Tesseract OCR, Python                         |
+| **PDF Processing** | PyMuPDF, pdf2image                            |
+| **XML Parser**     | fast-xml-parser                               |
+| **State**          | Zustand, React Query                          |
+| **Validation**     | Zod                                           |
 
 ---
 
@@ -351,7 +364,7 @@ Lab kullanıcıları için özel PIN tabanlı dijital imza:
 
 ```
 Kullanıcı Oluşturma:
-└─> role === 'lab' 
+└─> role === 'lab'
     └─> Otomatik 4-6 haneli benzersiz ID
         └─> Örnek: 4721, 582934
 
@@ -364,6 +377,7 @@ Reçete Onaylama:
 ```
 
 **Güvenlik:**
+
 - PIN'ler **hash'lenmez** (görünür olmalı - dijital imza için)
 - Sadece **lab role**'ü olanlar alır
 - Role değişirse **otomatik yönetilir**
@@ -444,6 +458,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 ## 🗺️ Roadmap
 
 ### ✅ Tamamlanan (Phase 1-5)
+
 - [x] Authentication & Authorization
 - [x] User Management (Signature ID)
 - [x] Materials Management
@@ -459,16 +474,18 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - [x] AI Uzman Danışman (Gemini API)
 
 ### ✅ KRİTİK DÜZELTMELER (Tamamlandı! 🎉)
+
 > **7 Şubat 2026 - Phase 5 Tamamlandı**
 
 - [x] **Database migration oluşturuldu** - 20260207000001_add_missing_recipe_columns.sql
 - [x] **DB şema-kod uyumsuzlukları düzeltildi** ✅
-  - [x] recipes.ts: 13 eksik alan eklendi (order_code, customer_*, yarn_type, vb.)
+  - [x] recipes.ts: 13 eksik alan eklendi (order*code, customer*\*, yarn_type, vb.)
   - [x] products.ts: Olmayan alanlar kaldırıldı (type, unit, target_ph)
   - [x] materials.ts: critical_level kullanımı düzeltildi (min_stock → critical_level)
   - [x] stock.ts: 3 yeni fonksiyon eklendi (getAllStock, addStockMovement, getStockMovements)
 
 ### ✅ STOK YÖNETİMİ SİSTEMİ (Tamamlandı! 🎉)
+
 > **%0 → %100 - 5 saat içinde tamamlandı**
 
 - [x] **Stok Dashboard** (/dashboard/stock)
@@ -492,6 +509,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [x] İnteraktif tablolar
 
 ### ✅ E-FATURA ENTEGRASYONU (Tamamlandı! 🎉)
+
 > **OCR ile PDF/JPEG desteği eklendi**
 
 - [x] **XML Parser** (UBL-TR e-Fatura)
@@ -515,14 +533,23 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [x] Çoklu format desteği (XML, PDF, JPEG, PNG)
   - [x] Eşleşme sonuçları gösterimi
 
-### 🚧 Gelecek Geliştirmeler (Phase 6)
-> **Hedef:** MVP'den Production'a geçiş
+### 🚧 Gelecek Geliştirmeler (Phase 8.1 - Stok & Reçete Odaklı)
 
-- [ ] **Üretim Modülü Tamamlama** (%50 → %100)
+- [ ] **Gelişmiş Stok Kontrolleri**
+  - [ ] Otomatik FIFO/LIFO takibi hazırlığı
+  - [ ] Depo bazlı ayrıştırma altyapısı
+- [ ] **Reçete Hassasiyet İyileştirmeleri**
+  - [ ] Tolerans limitleri belirleme
+  - [ ] Dinamik maliyet güncellemeleri
+
+### ⏳ Sonraki Versiyon (Phase 9.0+)
+
+- [ ] **Üretim Modülü Tamamlama** (DONDURULDU)
   - [ ] production.ts server action güncellemesi
   - [ ] /dashboard/production sayfası tasarımı
   - [ ] Üretim başlatma formu
   - [ ] Parti numarası otomasyonu
+
 - [ ] **Stok Detay Sayfası** (Eklenti)
   - [ ] /dashboard/stock/[id] - Malzeme detayı
   - [ ] Stok hareket geçmişi timeline
@@ -543,6 +570,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [ ] Toplu fatura import
 
 ### 🎯 Farklılaşma Özellikleri (Phase 7-8)
+
 > **Hedef:** Rekabet avantajı sağla
 
 - [ ] **Proses Parametreleri Yönetimi**
@@ -570,6 +598,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [ ] Alternatif kimyasal önerisi
 
 ### 🌟 Stratejik Özellikler (Hafta 13-20)
+
 > **Hedef:** Export pazarına hazırlık
 
 - [ ] **ZDHC/RSL Uyumluluk Kontrolü**
@@ -577,7 +606,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [ ] AFIRM RSL veritabanı
   - [ ] Limit aşım uyarısı
   - [ ] Uyumluluk raporu
-- [ ] **Manuel L*a*b* ve Delta E**
+- [ ] **Manuel L*a*b\* ve Delta E**
   - [ ] Renk değer girişi
   - [ ] Delta E hesaplama
   - [ ] Kabul kriteri tanımlama
@@ -591,6 +620,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - [ ] API dokümantasyonu
 
 ### 📋 Gelecek Versiyon (Phase 6+)
+
 - [ ] Mobile App (React Native)
 - [ ] IoT/Sensör Entegrasyonu
 - [ ] ERP Entegrasyonu
@@ -605,21 +635,23 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 > **Phase:** 6.2 - Reçete & Malzeme İyileştirmeleri
 
 ### Modül Bazlı Tamamlanma
-| Modül | Tamamlanma | Durum |
-|-------|------------|-------|
-| **Authentication** | %100 | ✅ Tamamlandı |
-| **Kullanıcı Yönetimi** | %100 | ✅ Tamamlandı |
-| **Malzeme Yönetimi** | %100 | ✅ Tamamlandı |
-| **Ürün Yönetimi** | %100 | ✅ Tamamlandı |
-| **Reçete Yönetimi** | %100 | ✅ Tamamlandı (Uyumluluk + Onay) |
-| **Stok Yönetimi** | %100 | ✅ TAMAMLANDI (YENİ!) |
-| **E-Fatura Entegrasyonu** | %80 | ✅ TAMAMLANDI (YENİ!) |
-| **Email Sistemi** | %100 | ✅ Tamamlandı |
-| **Dashboard** | %85 | ✅ İyi Durumda |
-| **Üretim Takibi** | %50 | 🚧 Geliştirilmekte |
-| **Raporlama** | %20 | 🚧 Temel Seviye |
+
+| Modül                     | Tamamlanma | Durum                            |
+| ------------------------- | ---------- | -------------------------------- |
+| **Authentication**        | %100       | ✅ Tamamlandı                    |
+| **Kullanıcı Yönetimi**    | %100       | ✅ Tamamlandı                    |
+| **Malzeme Yönetimi**      | %100       | ✅ Tamamlandı                    |
+| **Ürün Yönetimi**         | %100       | ✅ Tamamlandı                    |
+| **Reçete Yönetimi**       | %100       | ✅ Tamamlandı (Uyumluluk + Onay) |
+| **Stok Yönetimi**         | %100       | ✅ TAMAMLANDI (YENİ!)            |
+| **E-Fatura Entegrasyonu** | %80        | ✅ TAMAMLANDI (YENİ!)            |
+| **Email Sistemi**         | %100       | ✅ Tamamlandı                    |
+| **Dashboard**             | %85        | ✅ İyi Durumda                   |
+| **Üretim Takibi**         | %50        | 🚧 Geliştirilmekte               |
+| **Raporlama**             | %20        | 🚧 Temel Seviye                  |
 
 ### Son Eklenenler (13 Şubat 2026)
+
 - ✅ **Reçete Düzenleme 404 Hatası Giderildi** - Middleware session refresh, DB şema düzeltmeleri
 - ✅ **Planlama Tarihi Otomasyonu** - Reçetede bugünün tarihi otomatik, salt okunur
 - ✅ **Malzeme Stok Miktarı Gösterimi** - Gerçek stok miktarı sütunu eklendi (0 gösterim, kırmızı kritik uyarı)
@@ -627,6 +659,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - ✅ **getStockQuantityMap()** - Yeni server action: tüm malzemelerin stok miktarını map olarak döndürür
 
 **Detaylı Analiz ve Yol Haritası:**
+
 - 📄 [Kapsamlı Analiz ve Yol Haritası](docs/ANALIZ_VE_YOL_HARITASI.md)
 - ⚡ [Hızlı Başlangıç Rehberi](docs/HIZLI_BASLANGIC_REHBERI.md)
 - 📋 [PRD - Ürün Gereksinim Dokümanı](docs/PRD.md)
@@ -639,6 +672,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 ## 🎉 Son Başarılar
 
 ### Phase 5 Tamamlandı (7 Şubat 2026)
+
 1. **Kritik Düzeltmeler** ✅
    - Database types uyumsuzlukları giderildi
    - recipes.ts: 13 eksik alan eklendi
@@ -663,6 +697,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 ---
 
 ### ✅ INVOICE DATA IMPORT & UI REFINEMENTS (Phase 6 Tamamlandı! 🎉)
+
 > **11 Şubat 2026**
 
 - [x] **Dark Mode UI Fix** - Stok tablosundaki beyaz arka plan sorunu giderildi.
@@ -671,9 +706,11 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 - [x] **Data Import Script** - `scripts/import_data_via_api.js` ile fatura verileri (RUD2025...) başarıyla içeri aktarıldı.
 - [x] **New Modules Initialized** - Üretim ve Raporlama sayfaları (404 hatasını gidermek için) placeholder olarak oluşturuldu.
 - [x] **Project Cleanup** - Gereksiz dosyalar `archive` klasörüne taşındı, proje dizini temizlendi.
+
 ---
 
 ### ✅ REÇETE & MALZEME İYİLEŞTİRMELERİ (Phase 6.2 Tamamlandı! 🎉)
+
 > **13 Şubat 2026**
 
 - [x] **Reçete Düzenleme 404 Hatası** - Middleware'e Supabase session refresh eklendi, `getRecipeById` şema hataları düzeltildi (`products.unit`, `recipe_items.percentage` kaldırıldı).
@@ -684,6 +721,7 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 ---
 
 ### ✅ REÇETE UYUMLULUK VE ONAY SİSTEMİ (Phase 7.0 Tamamlandı! 🎉)
+
 > **14 Şubat 2026**
 
 - [x] **Otomatik MRLS Uyumluluk Kontrolü** - Reçete oluşturulurken/güncellenirken içerdiği kimyasallar (CAS No) ZDHC MRSL ve Oeko-Tex standartlarına göre taranıyor.
@@ -693,10 +731,10 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
   - 2. **Otomatik Yönlendirme:** Uygunsa, durum otomatik olarak **'Pending'** (Yönetici Onayı Bekliyor) olur.
 - [x] **UI İyileştirmeleri** - Uyumluluk ihlalleri için detaylı modal penceresi eklendi.
 
-
 ---
 
 ### ✅ DEEPGRAPH REFAKTÖRÜ & DB STANDARDIZASYONU (Tamamlandı! 🎉)
+
 > **16 Şubat 2026**
 
 - [x] **DeepGraph Analizi ve Uygulaması** - Kod karmaşıklığı azaltıldı, modüler yapı güçlendirildi.
@@ -707,12 +745,41 @@ UPDATE stock SET quantity = 5 WHERE material_id = '<material_id>';
 
 ---
 
+### ✅ İLERİ SEVİYE FATURA EŞLEŞTİRME & VERİ YÖNETİMİ (Phase 8.0 Tamamlandı! 🎉)
+
+> **26 Şubat 2026**
+
+- [x] **Gelişmiş Malzeme Eşleştirme (`normalizeCode`)** - Malzeme kodlarındaki boşluk, tire ve özel karakter farklılıklarını (örn: '25-0035' vs '25 0035') otomatik tolere eden akıllı normalizasyon sistemi eklendi.
+- [x] **Fatura Geçmişi Görünürlüğü** - `external_invoice` referans tiplerinin sorguya dahil edilmesiyle, dışarıdan aktarılan faturaların listede görünmeme sorunu giderildi.
+- [x] **Stok Hareketi Detayları** - Fatura işleme sırasında malzeme isimlerinin otomatik olarak stok hareketi açıklamalarına (`notes`) eklenmesi sağlandı.
+- [x] **Kapsamlı Veri Sıfırlama** - Kullanıcı talebi doğrultusunda sistemdeki tüm fatura (`kts_incoming_invoices`), stok hareketi (`kts_stock_movements`) ve e-posta günlükleri (`kts_email_fetch_log`) temizlendi; stok miktarları sıfırlandı.
+- [x] **XML Parser Optimizasyonu** - UBL-TR XML dosyalarından ürün kodu ve isim ayıklama mantığı daha robust hale getirildi.
+
+---
+
 ## 📄 Lisans
 
 Bu proje özel lisans altındadır.
 
 ---
 
-**Son Güncelleme:** 16 Şubat 2026 (17:30)
-**Versiyon:** Phase 7.5 - DeepGraph Refaktörü & DB Standardizasyonu
-**Geliştirici:** Kimyasal Takip Ekibi
+**Son Güncelleme:** 26 Şubat 2026 (23:35)
+**Versiyon:** Phase 8.1 - Stok ve E-Fatura Doğrulaması
+**Geliştirici:** Kimyasal Takip Ekibi (Antigravity AI)
+
+---
+
+### 📝 26 Şubat Gün Sonu Özeti
+
+Bugün e-fatura entegrasyonu ve stok yönetimi üzerinde kritik ilerlemeler kaydedildi:
+
+1.  **E-Fatura Akışı:** Mail kutusundan fatura çekme süreci (`scripts/execute_mailparser_fetch.js`) UID:11 ile başarıyla test edildi.
+2.  **Veri Ayrıştırma:** XML içerisindeki miktar ve birim fiyat alanlarının (`cbc:Quantity`, `cbc:Price`) `fast-xml-parser` ile yanlış okunması sorunu `textNodeName: '_text'` yapılandırmasıyla çözüldü.
+3.  **Stok Entegrasyonu:** `scripts/import_invoice.js` kullanılarak UID:11 faturası bazında **RUCO-FLOW BBA** stoğu 2000kg'dan 3000kg'a başarıyla yükseltildi.
+4.  **MATCHING:** `33905C` faturasındaki ürünün sistemdeki malzeme ile otomatik eşleştiği doğrulandı.
+
+### 🚀 Yarınki Plan (27 Şubat)
+
+1.  **UI Entegrasyonu:** Scripts klasöründe çalışan XML ayrıştırma ve stok güncelleme mantığının `frontend/src/` altındaki ana kod tabanına (Server Action) taşınması.
+2.  **Hata Yönetimi:** Fatura import sırasında "duplicate key" veya "match missing" durumlarının UI üzerinde kullanıcıya bildirilmesi.
+3.  **Üretim Bloğu:** Kullanıcı isteği doğrultusunda Üretim modülü beklemeye alındı; öncelik stok ve reçete kontrollerinde kalacak.

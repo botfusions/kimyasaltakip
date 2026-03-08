@@ -38,3 +38,13 @@ export function normalizeString(str: string): string {
         .trim()
         .replace(/[^a-z0-9İığüşöç\s]/g, ''); // Keep Turkish characters and spaces for better matching
 }
+
+/**
+ * Normalize code for comparison (lowercase, remove all non-alphanumeric, remove spaces)
+ */
+export function normalizeCode(str: string): string {
+    return str
+        .toLowerCase()
+        .replace(/[^a-z0-9İığüşöç]/g, '')
+        .trim();
+}

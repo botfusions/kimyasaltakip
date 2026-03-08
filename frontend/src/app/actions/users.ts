@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createUserSchema, updateUserSchema } from '@/lib/validations/user';
 import { getCurrentUser } from './auth';
 
@@ -95,16 +95,15 @@ export async function createUser(formData: FormData) {
 
     const supabase = await createClient();
 
-    // 1. Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Create user in Supabase Auth via Admin API (skips confirmation email)
+    const adminSupabase = createAdminClient();
+    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
         email: validation.data.email,
         password: validation.data.password,
-        options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-            data: {
-                name: validation.data.name,
-                role: validation.data.role,
-            },
+        email_confirm: true, // This marks email as confirmed and avoids sending verification email
+        user_metadata: {
+            name: validation.data.name,
+            role: validation.data.role,
         },
     });
 
@@ -146,7 +145,8 @@ export async function createUser(formData: FormData) {
     }
 
     // 2. Insert user profile into users table
-    const { data, error } = await supabase
+    // Use admin client for DB insert to bypass potential RLS issues during user creation
+    const { data, error } = await adminSupabase
         .from('kts_users')
         .insert({
             id: authData.user.id, // Use Auth user ID
@@ -162,14 +162,16 @@ export async function createUser(formData: FormData) {
         .single();
 
     if (error) {
-        // If user profile creation fails, we should ideally delete the auth user
-        // but Supabase doesn't allow that from client SDK
-        // Admin should manually clean up via Supabase dashboard if needed
+        console.error('❌ DB Profile creation error:', error);
+        // If user profile creation fails, try to clean up the auth user
+        await adminSupabase.auth.admin.deleteUser(authData.user.id);
+        
         if (error.code === '23505') { // Unique violation
-            return { error: 'Bu email adresi zaten kullanılıyor' };
+            return { error: 'Bu email adresi zaten kullanılıyor (DB)' };
         }
-        return { error: 'Kullanıcı profili oluşturulurken hata oluştu' };
+        return { error: `Kullanıcı profili oluşturulurken hata oluştu: ${error.message}` };
     }
+
 
     // Log audit
     await supabase.from('kts_audit_logs').insert({

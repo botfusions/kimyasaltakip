@@ -280,7 +280,7 @@ export async function getInvoiceHistory(limit = 50) {
                 material:kts_materials(id, code, name, unit),
                 created_by_user:kts_users!stock_movements_created_by_fkey(id, name)
             `)
-            .eq('reference_type', 'invoice')
+            .in('reference_type', ['invoice', 'external_invoice'])
             .order('created_at', { ascending: false })
             .limit(limit);
 

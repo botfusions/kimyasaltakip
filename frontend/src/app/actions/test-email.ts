@@ -1,14 +1,25 @@
 'use server';
 
 import { sendEmail } from '@/lib/email';
+import { getSettingByKey } from './settings';
 
 /**
  * Test email gönderimi (Sadece test amaçlı)
  */
 export async function sendTestEmail() {
     try {
+        // Ayarlardan rapor alıcılarını al
+        const { data: setting, error: settingError } = await getSettingByKey('REPORT_RECEIVER_EMAILS');
+        
+        if (settingError && settingError.code !== 'PGRST116') { // PGRST116 is "no rows found"
+            console.error('Error fetching settings:', settingError);
+        }
+
+        const recipientsValue = setting?.value || 'aziz.guc@goldstarteks.com';
+        const recipients = recipientsValue.split(',').map((email: string) => email.trim());
+
         const result = await sendEmail({
-            to: 'cenk.tokgoz@gmail.com',
+            to: recipients,
             subject: 'Kimyasal Takip Sistemi - Test Email',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

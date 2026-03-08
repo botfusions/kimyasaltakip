@@ -97,7 +97,7 @@ export class ImapFetcher {
                 : [],
             searchSubject: config['GMAIL_IMAP_SEARCH_SUBJECT']
                 ? config['GMAIL_IMAP_SEARCH_SUBJECT'].split(',').map(s => s.trim()).filter(Boolean)
-                : ['fatura', 'invoice', 'e-fatura'],
+                : [], // Başlık filtresini kaldır, hepsini tara
         });
     }
 
@@ -123,91 +123,117 @@ export class ImapFetcher {
                 user: this.config.user,
                 pass: this.config.password,
             },
+            tls: {
+                rejectUnauthorized: false
+            },
             logger: false,
         });
+
+        let lock: any = null;
 
         try {
             // 1. Connect to Gmail
             await client.connect();
             console.log('✅ Gmail IMAP connected');
 
-            // 2. Open mailbox
-            const lock = await client.getMailboxLock(this.config.folder);
+            // 3. Open mailbox - INBOX is where the test mails are
+            const mailboxToOpen = 'INBOX'; 
+            result.errors.push(`📂 Attempting to open: ${mailboxToOpen}`);
+            lock = await client.getMailboxLock(mailboxToOpen);
+            
+            // 4. Get already processed UIDs
+            const processedUids = await this.getProcessedUids();
+            result.errors.push(`📝 Database has ${processedUids.size} processed UIDs`);
 
-            try {
-                // 3. Get already processed UIDs from database
-                const processedUids = await this.getProcessedUids();
+            // 5. Search for RECENT messages in INBOX
+            const sinceDate = new Date();
+            sinceDate.setDate(sinceDate.getDate() - 1); // Last 24 hours
+            
+            const searchCriteria: any = { since: sinceDate };
+            result.errors.push(`🔍 Searching since: ${sinceDate.toISOString()}`);
+            
+            const messages = client.fetch(searchCriteria, {
+                envelope: true,
+                bodyStructure: true,
+                uid: true,
+            });
 
-                // 4. Search for invoice emails (unseen or last 7 days)
-                const searchCriteria: any = {
-                    since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-                };
+            const emailsFound: number = 0;
+            let processedInSession = 0;
 
-                const messages = client.fetch(searchCriteria, {
-                    envelope: true,
-                    bodyStructure: true,
-                    uid: true,
-                });
+            for await (const msg of messages) {
+                if (processedInSession >= 10) break; // Limit session
 
-                const emails: FetchedEmail[] = [];
+                const uid = msg.uid.toString();
+                const subject = msg.envelope?.subject || '';
+                const fromAddress = msg.envelope?.from?.[0]?.address || '';
+                const date = msg.envelope?.date || new Date();
 
-                for await (const msg of messages) {
-                    const uid = msg.uid.toString();
+                // Subject filter
+                const lowerSubject = subject.toLowerCase();
+                if (!lowerSubject.includes('fatura') && !lowerSubject.includes('invoice')) continue;
 
-                    // Skip already processed
-                    if (processedUids.has(uid)) continue;
+                if (processedUids.has(uid)) continue;
+                
+                const relevantParts = this.findRelevantParts(msg.bodyStructure);
+                if (relevantParts.length === 0) continue;
 
-                    // Check subject filter
-                    const subject = msg.envelope?.subject || '';
-                    const matchesSubject = this.config.searchSubject.length === 0 ||
-                        this.config.searchSubject.some(keyword =>
-                            subject.toLowerCase().includes(keyword.toLowerCase())
-                        );
+                processedInSession++;
+                result.errors.push(`📩 UID:${uid} - Found ${relevantParts.length} parts to fetch.`);
 
-                    // Check sender filter
-                    const fromAddress = msg.envelope?.from?.[0]?.address || '';
-                    const matchesFrom = this.config.searchFrom.length === 0 ||
-                        this.config.searchFrom.some(addr =>
-                            fromAddress.toLowerCase().includes(addr.toLowerCase())
-                        );
-
-                    if (!matchesSubject && !matchesFrom) continue;
-
-                    // Check for attachments
-                    const hasAttachments = this.hasRelevantAttachments(msg.bodyStructure);
-                    if (!hasAttachments) continue;
-
-                    // Fetch full message
-                    const fullMessage = await client.download(uid, undefined, { uid: true });
-
-                    if (fullMessage?.content) {
-                        const parsed = await simpleParser(fullMessage.content);
-                        const fetchedEmail = this.extractEmailData(uid, parsed);
-
-                        if (fetchedEmail.attachments.length > 0) {
-                            emails.push(fetchedEmail);
-                            result.emailsFound++;
-                            result.attachmentsFound += fetchedEmail.attachments.length;
+                const attachments: EmailAttachment[] = [];
+                for (const p of relevantParts) {
+                    try {
+                        const partData = await client.fetchOne(uid, { bodyParts: [p.partId] }, { uid: true });
+                        if (partData && 'bodyParts' in partData && partData.bodyParts) {
+                            const buffer = partData.bodyParts.get(p.partId);
+                            if (buffer) {
+                                attachments.push({
+                                    filename: p.filename || `att_${uid}_${p.partId}`,
+                                    contentType: p.mime,
+                                    size: buffer.length,
+                                    content: buffer
+                                });
+                            }
                         }
+                    } catch (err: any) {
+                        result.errors.push(`   ❌ Error fetching part ${p.partId}: ${err.message}`);
                     }
                 }
 
-                // 5. Save to database
-                for (const email of emails) {
-                    const saved = await this.saveInvoiceEmail(email);
+                if (attachments.length > 0) {
+                    const fetchedEmail: FetchedEmail = {
+                        uid,
+                        from: fromAddress,
+                        subject,
+                        date,
+                        bodyPreview: '', // Body preview is optional for now
+                        attachments
+                    };
+
+                    const saved = await this.saveInvoiceEmail(fetchedEmail);
                     result.invoicesCreated += saved;
+                    result.emailsFound++;
+                    console.log(`✅ UID:${uid} processed and saved.`);
                 }
-
-                result.success = true;
-
-            } finally {
-                lock.release();
             }
+
+            result.success = true;
+            // result.emailsFound already incremented in loop
 
         } catch (error: any) {
             console.error('IMAP fetch error:', error);
             result.errors.push(error.message || 'Unknown IMAP error');
         } finally {
+            // Release lock if it was acquired
+            if (lock) {
+                try {
+                    lock.release();
+                } catch (e) {
+                    console.warn('Failed to release mailbox lock:', e);
+                }
+            }
+            
             try {
                 await client.logout();
             } catch {
@@ -223,70 +249,32 @@ export class ImapFetcher {
     }
 
     /**
-     * Check if message body structure contains relevant attachments
+     * Recursive function to find relevant part IDs from bodyStructure
      */
-    private hasRelevantAttachments(bodyStructure: any): boolean {
-        if (!bodyStructure) return false;
+    private findRelevantParts(part: any, depth: number = 0): { partId: string; filename: string; mime: string }[] {
+        let found: { partId: string; filename: string; mime: string }[] = [];
+        if (!part || depth > 8) return found;
 
-        const validTypes = [
-            'application/xml',
-            'text/xml',
-            'application/pdf',
-            'image/jpeg',
-            'image/png',
-            'application/octet-stream',
-        ];
+        const type = (part.type || '').toLowerCase();
+        const subtype = (part.subtype || '').toLowerCase();
+        const mime = `${type}/${subtype}`;
+        const partId = part.part;
+        const filename = (part.disposition?.params?.filename || part.params?.name || '').toLowerCase();
 
-        const validExtensions = ['.xml', '.pdf', '.jpg', '.jpeg', '.png'];
+        const isMatch = filename.endsWith('.xml') || filename.endsWith('.pdf') || 
+                       filename.endsWith('.jpg') || filename.endsWith('.jpeg') || filename.endsWith('.png') ||
+                       mime.includes('pdf') || mime.includes('xml') || mime.includes('image/');
 
-        const check = (part: any): boolean => {
-            if (!part) return false;
+        if (isMatch && partId) {
+            found.push({ partId, filename, mime });
+        }
 
-            const type = `${part.type || ''}/${part.subtype || ''}`.toLowerCase();
-            const filename = (part.disposition?.params?.filename || part.params?.name || '').toLowerCase();
-
-            if (validTypes.includes(type) || validExtensions.some(ext => filename.endsWith(ext))) {
-                return true;
+        if (part.childNodes) {
+            for (const child of part.childNodes) {
+                found = found.concat(this.findRelevantParts(child, depth + 1));
             }
-
-            if (part.childNodes) {
-                return part.childNodes.some(check);
-            }
-
-            return false;
-        };
-
-        return check(bodyStructure);
-    }
-
-    /**
-     * Extract email data from parsed mail
-     */
-    private extractEmailData(uid: string, parsed: ParsedMail): FetchedEmail {
-        const validExtensions = ['.xml', '.pdf', '.jpg', '.jpeg', '.png'];
-
-        const attachments: EmailAttachment[] = (parsed.attachments || [])
-            .filter(att => {
-                const filename = (att.filename || '').toLowerCase();
-                return validExtensions.some(ext => filename.endsWith(ext));
-            })
-            .map(att => ({
-                filename: att.filename || `attachment_${uid}`,
-                contentType: att.contentType || 'application/octet-stream',
-                size: att.size || 0,
-                content: att.content,
-            }));
-
-        const bodyText = parsed.text || '';
-
-        return {
-            uid,
-            from: parsed.from?.text || '',
-            subject: parsed.subject || '',
-            date: parsed.date || new Date(),
-            bodyPreview: bodyText.substring(0, 500),
-            attachments,
-        };
+        }
+        return found;
     }
 
     /**

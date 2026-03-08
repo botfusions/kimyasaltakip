@@ -20,11 +20,11 @@
 
 > **Legend:** `file.ts <- A.tsx, B.tsx` = This file is **imported by** A.tsx and B.tsx.
 > Directories with `[N files: ...]` are summarized to reduce size.
-> [STATS] Showing 146 files. 4 dirs summarized, 5 dirs excluded (node_modules, etc.)
+> [STATS] Showing 152 files. 4 dirs summarized, 5 dirs excluded (node_modules, etc.)
 
 
 ```
-.github/ [1 files: 1 .yml]
+.github/ [4 files: 3 .yml, 1 .md]
 archive/
   CLEANUP_LOG.md
   Dijital Reçete Tabanlı Boya & Kimyasal Tüketim İzleme Sistemi.docx
@@ -79,18 +79,22 @@ frontend/
         auth.ts ← Header.tsx, RecipeManagementClient.tsx, layout.tsx +9 more
         compliance.ts ← MrlsCheckModal.tsx, MrlsCheckClient.tsx
         expert.ts ← ExpertConsultantClient.tsx
+        incoming-invoices.ts ← page.tsx
         invoices.ts ← InvoiceImportClient.tsx, InvoiceListClient.tsx, page.tsx
         materials.ts ← MaterialModal.tsx, MaterialsManagementClient.tsx, RecipeEditor.tsx +1 more
         products.ts ← ProductModal.tsx, ProductsManagementClient.tsx, page.tsx +1 more
         recipes.ts ← MrlsCheckModal.tsx, RecipeDetailsView.tsx, RecipeEditor.tsx +5 more
         reports.ts
-        settings.ts ← SettingsClient.tsx, recipes.ts, page.tsx
+        settings.ts ← SettingsClient.tsx, recipes.ts, page.tsx +1 more
         stock.ts ← MaterialsManagementClient.tsx, StockMovementForm.tsx, page.tsx +1 more
         test-email.ts ← page.tsx
         users.ts ← UserManagementClient.tsx, UserModal.tsx, page.tsx
       api/
         debug-recipe/
           route.ts
+        email-invoices/
+          fetch/
+            route.ts
         ocr/
           route.ts
         seed-demo/
@@ -105,6 +109,8 @@ frontend/
           page.tsx
         invoices/
           import/
+            page.tsx
+          incoming/
             page.tsx
           page.tsx
         layout.tsx
@@ -180,6 +186,8 @@ frontend/
         UserModal.tsx ← UserManagementClient.tsx
     lib/
       barcode.ts ← recipe-pdf.ts, RecipeDetailsView.tsx, RecipeFormPDF.tsx
+      email/
+        imap-fetcher.ts ← route.ts
       email.ts ← recipes.ts, reports.ts, test-email.ts
       invoice/
         MatchingEngine.ts ← invoice-parser.ts
@@ -194,7 +202,7 @@ frontend/
       supabase/
         client.ts
         middleware.ts ← middleware.ts
-        server.ts ← email.ts, reports.ts
+        server.ts ← email.ts
       telegram.ts ← recipes.ts
       utils.ts ← Sidebar.tsx, Button.tsx, Input.tsx +2 more
       validations/
@@ -220,10 +228,12 @@ scripts/
   check_data.js
   get_ids.js
   refactor_db_prefix.js
+  run_migration.js
   seed_test_data.js
+  temp_check_imap.js
   verify_db_refactor.js
 supabase/
-  migrations/ [21 files: 20 .sql, 1 .bak]
+  migrations/ [22 files: 21 .sql, 1 .bak]
 tessdata/
   eng.traineddata
   tur.traineddata
@@ -232,7 +242,7 @@ tessdata/
 
 ## File Dependencies
 
-> Scanned 123 files
+> Scanned 129 files
 
 ### API Endpoints Used
 
@@ -247,10 +257,10 @@ tessdata/
 | File | Imported by |
 |------|-------------|
 | `src/components/ui/Button` | 19 files |
-| `src/lib/supabase/server` | 14 files |
+| `src/lib/supabase/server` | 18 files |
 | `src/app/actions/auth` | 12 files |
 | `src/components/ui/Input` | 12 files |
-| `frontend/src/app/actions/auth` | 9 files |
+| `frontend/src/app/actions/auth` | 10 files |
 
 
 ---

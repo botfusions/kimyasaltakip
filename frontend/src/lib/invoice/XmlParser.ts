@@ -43,9 +43,34 @@ export class XmlInvoiceParser {
 
             const lines: InvoiceLine[] = invoiceLines.map((line: any) => {
                 const lineNumber = parseInt(line['cbc:ID'] || '0');
-                const productName = line['cac:Item']?.['cbc:Description'] || '';
-                const productCode = line['cac:Item']?.['cbc:Name'] || '';
-                const quantity = parseFloat(line['cbc:InvoicedQuantity'] || '0');
+                const item = line['cac:Item'] || {};
+                
+                // Name often contains the product name or mixed name/code in UBL-TR
+                const name = item['cbc:Name'] || '';
+                // Description often contains detailed names or additional info like "25-0035"
+                const description = item['cbc:Description'] || '';
+                
+                // Identification fields are key for codes
+                const sellerCode = item['cac:SellersItemIdentification']?.['cbc:ID'] || '';
+                const buyerCode = item['cac:BuyersItemIdentification']?.['cbc:ID'] || '';
+                
+                // Priority for Product Name
+                const productName = name || description || 'İsimsiz Ürün';
+                
+                // Priority for Product Code
+                // If there's a seller code, it's usually the most reliable
+                let productCode = sellerCode || name || buyerCode || '';
+
+                // If code and name are same, or code is empty, try to extract from description
+                if ((!productCode || productCode === productName) && description) {
+                    // Look for common patterns like 25-0035 in description
+                    const codeMatch = description.match(/([A-Z0-9-]{4,})/);
+                    if (codeMatch) {
+                        productCode = codeMatch[1];
+                    }
+                }
+
+                const quantity = parseFloat(line['cbc:InvoicedQuantity'] || line['cbc:DeliveredQuantity'] || '0');
                 const unitPrice = parseFloat(line['cac:Price']?.['cbc:PriceAmount'] || '0');
                 const totalAmount = parseFloat(line['cbc:LineExtensionAmount'] || '0');
                 const currency = line['cbc:LineExtensionAmount']?.['@_currencyID'] || currencyCode;

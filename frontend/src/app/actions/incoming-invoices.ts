@@ -206,8 +206,9 @@ export async function importIncomingInvoice(id: string) {
         // 2. Create stock movements for matched lines
         let stockMovementsCreated = 0;
         const errors: string[] = [];
+        const matchResult = (invoice.match_result || []) as any[];
 
-        for (const line of invoice.match_result) {
+        for (const line of matchResult) {
             if (!line.matched || !line.materialId) continue;
 
             // Create stock movement
@@ -219,9 +220,9 @@ export async function importIncomingInvoice(id: string) {
                 total_cost: line.totalAmount,
                 batch_number: null,
                 supplier: invoice.supplier_name,
-                reference_type: 'invoice',
+                reference_type: 'invoice', // Keep as 'invoice' to match UI
                 reference_id: invoice.invoice_number,
-                notes: `E-Fatura: ${invoice.invoice_number} - ${line.productName} (E-posta: ${invoice.email_from})`,
+                notes: `E-Fatura: ${invoice.invoice_number} - ${line.materialName || line.productName} (Orijinal: ${line.productName})`,
                 created_by: user.id,
             });
 

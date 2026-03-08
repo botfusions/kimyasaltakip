@@ -54,6 +54,6 @@ export function matchMaterial(
     productCode: string,
     productName: string,
     materials: Array<{ id: string; code: string; name: string }>
-): { materialId: string | null; confidence: number } {
+): { materialId: string | null; materialName?: string | null; materialCode?: string | null; confidence: number } {
     return MatchingEngine.matchMaterial(productCode, productName, materials);
 }

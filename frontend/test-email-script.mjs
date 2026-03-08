@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 // Email ayarları (SQL'den aldığımız değerler)
 const RESEND_API_KEY = 're_imv7Zsfa_7tD72N9B2g98B2ypdwUzmwNC';
 const EMAIL_FROM = 'onboarding@resend.dev';
-const EMAIL_TO = 'cenk.tokgoz@gmail.com';
+const EMAIL_TO = ['aziz.guc@goldstarteks.com'];
 
 async function testEmail() {
     console.log('📧 Email testi başlatılıyor...\n');

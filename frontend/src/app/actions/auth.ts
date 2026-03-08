@@ -69,10 +69,10 @@ export async function getCurrentUser() {
         return null;
     }
 
-    // Get user profile from users table
+    // Fetch profile data from kts_users
     const { data: profile, error: profileError } = await supabase
         .from('kts_users')
-        .select('id, email, name, role, is_active, phone, last_login_at')
+        .select('*')
         .eq('id', user.id)
         .single();
 

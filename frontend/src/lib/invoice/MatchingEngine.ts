@@ -1,4 +1,4 @@
-import { normalizeString } from '../string-utils';
+import { normalizeString, normalizeCode } from '../string-utils';
 
 /**
  * Service to match invoice items with database materials
@@ -12,26 +12,27 @@ export class MatchingEngine {
         productCode: string,
         productName: string,
         materials: Array<{ id: string; code: string; name: string }>
-    ): { materialId: string | null; confidence: number } {
+    ): { materialId: string | null; materialName: string | null; confidence: number } {
         if (!materials || materials.length === 0) {
-            return { materialId: null, confidence: 0 };
+            return { materialId: null, materialName: null, confidence: 0 };
         }
 
-        const normalizedProductCode = normalizeString(productCode);
+        const normalizedProductCode = normalizeCode(productCode);
         const normalizedProductName = normalizeString(productName);
 
-        let bestMatch: { materialId: string | null; confidence: number } = {
+        let bestMatch: { materialId: string | null; materialName: string | null; confidence: number } = {
             materialId: null,
+            materialName: null,
             confidence: 0,
         };
 
         for (const material of materials) {
-            const normalizedMaterialCode = normalizeString(material.code);
+            const normalizedMaterialCode = normalizeCode(material.code);
             const normalizedMaterialName = normalizeString(material.name);
 
             // Exact code match = 100% confidence
-            if (normalizedProductCode === normalizedMaterialCode) {
-                return { materialId: material.id, confidence: 1.0 };
+            if (normalizedProductCode !== '' && normalizedProductCode === normalizedMaterialCode) {
+                return { materialId: material.id, materialName: material.name, confidence: 1.0 };
             }
 
             // Partial code match
@@ -42,16 +43,17 @@ export class MatchingEngine {
             ) {
                 const confidence = 0.8;
                 if (confidence > bestMatch.confidence) {
-                    bestMatch = { materialId: material.id, confidence };
+                    bestMatch = { materialId: material.id, materialName: material.name, confidence };
                 }
             }
 
             // Name similarity (simple substring match)
             if (normalizedProductName && normalizedMaterialName) {
-                if (normalizedProductName.includes(normalizedMaterialName)) {
+                if (normalizedProductName.includes(normalizedMaterialName) || 
+                    normalizedMaterialName.includes(normalizedProductName)) {
                     const confidence = 0.6;
                     if (confidence > bestMatch.confidence) {
-                        bestMatch = { materialId: material.id, confidence };
+                        bestMatch = { materialId: material.id, materialName: material.name, confidence };
                     }
                 }
             }
