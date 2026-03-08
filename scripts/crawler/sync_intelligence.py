@@ -1,6 +1,8 @@
 import os
 import asyncio
 import json
+import requests
+import fitz  # PyMuPDF
 from datetime import datetime
 from typing import List, Dict, Any
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
@@ -54,6 +56,21 @@ async def save_intelligence_data(source_id: str, title: str, content: str, url: 
         {"last_synced_at": datetime.utcnow().isoformat()}
     ).eq("id", source_id).execute()
 
+def process_pdf(url: str) -> str:
+    """Download PDF and extract text content."""
+    print(f"📄 Processing PDF: {url}")
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    
+    # Open PDF from memory
+    doc = fitz.open(stream=response.content, filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    
+    doc.close()
+    return text.strip()
+
 async def crawl_and_sync():
     """Main crawler loop."""
     sources = await get_active_sources()
@@ -69,23 +86,37 @@ async def crawl_and_sync():
             print(f"🌐 Crawling: {url}")
             
             try:
-                # Crawl configuration (Markdown output is best for RAG)
-                result = await crawler.arun(
-                    url=url,
-                    config=CrawlerRunConfig(cache_mode=CacheMode.BYPASS)
-                )
-                
-                if result.success:
-                    # Save the Markdown content
-                    await save_intelligence_data(
-                        source_id=source["id"],
-                        title=source["name"],
-                        content=result.markdown,
-                        url=url
-                    )
-                    print(f"✅ Successfully synced: {url}")
+                if url.lower().endswith(".pdf"):
+                    # Process PDF
+                    pdf_text = process_pdf(url)
+                    if pdf_text:
+                        await save_intelligence_data(
+                            source_id=source["id"],
+                            title=source["name"],
+                            content=pdf_text,
+                            url=url
+                        )
+                        print(f"✅ Successfully synced PDF: {url}")
+                    else:
+                        print(f"⚠️ No text found in PDF: {url}")
                 else:
-                    print(f"⚠️ Failed to crawl {url}: {result.error_message}")
+                    # Process normal web page
+                    result = await crawler.arun(
+                        url=url,
+                        config=CrawlerRunConfig(cache_mode=CacheMode.BYPASS)
+                    )
+                    
+                    if result.success:
+                        # Save the Markdown content
+                        await save_intelligence_data(
+                            source_id=source["id"],
+                            title=source["name"],
+                            content=result.markdown,
+                            url=url
+                        )
+                        print(f"✅ Successfully synced: {url}")
+                    else:
+                        print(f"⚠️ Failed to crawl {url}: {result.error_message}")
             
             except Exception as e:
                 print(f"❌ Unexpected error crawling {url}: {str(e)}")

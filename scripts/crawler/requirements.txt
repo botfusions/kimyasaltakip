@@ -4,3 +4,5 @@ playwright
 python-dotenv
 sentence-transformers
 torch
+pymupdf
+requests
