@@ -361,7 +361,7 @@ export class ImapFetcher {
 
         if (attachmentType === "xml" && attachmentContent) {
           try {
-            const { parseInvoiceXML } = await import("@/lib/invoice-parser");
+            const { parseInvoiceXML } = await import("../invoice-parser");
             const parsed = parseInvoiceXML(attachmentContent);
             if (parsed) {
               parsedData = parsed;
