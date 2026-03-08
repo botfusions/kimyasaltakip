@@ -306,7 +306,7 @@ export default function MaterialsManagementClient() {
                         onClick={() => handleToggleStatus(material.id)}
                         className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
                       >
-                        {material.is_active ? "Pasifleştir" : "Aktifleştir"}
+                        {material.is_active ? "Sil" : "Aktifleştir"}
                       </button>
                     </td>
                   </tr>
