@@ -19,11 +19,8 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // Enable experimental features for Netlify compatibility
-  experimental: {
-    // Server Actions are stable in Next.js 14
-    serverComponentsExternalPackages: ["pg"],
-  },
+  // Enable features for Next.js 15
+  serverExternalPackages: ["pg"],
 
   // Ignore TypeScript errors during build (handled by CI)
   // Remove this when all errors are fixed

@@ -14,10 +14,11 @@ export const metadata: Metadata = {
 export default async function EditRecipePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  console.log("Edit Page - Params ID:", params.id);
-  const result = await getRecipeById(params.id);
+  const { id } = await params;
+  console.log("Edit Page - Params ID:", id);
+  const result = await getRecipeById(id);
   console.log("Edit Page - Fetch Result:", result);
   const { data: recipe, error } = result;
 
@@ -27,7 +28,7 @@ export default async function EditRecipePage({
         <h1 className="text-2xl font-bold">Hata</h1>
         <p>Reçete yüklenemedi.</p>
         <div className="bg-gray-100 p-4 rounded mt-4 overflow-auto">
-          <pre>{JSON.stringify({ error, paramsId: params.id }, null, 2)}</pre>
+          <pre>{JSON.stringify({ error, paramsId: id }, null, 2)}</pre>
         </div>
       </div>
     );

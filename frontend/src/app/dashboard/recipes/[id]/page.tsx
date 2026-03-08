@@ -8,9 +8,10 @@ import { getCurrentUser } from "../../../actions/auth";
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { data: recipe } = await getRecipeById(params.id);
+  const { id } = await params;
+  const { data: recipe } = await getRecipeById(id);
 
   return {
     title: recipe
@@ -23,9 +24,10 @@ export async function generateMetadata({
 export default async function RecipePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { data: recipe, error } = await getRecipeById(params.id);
+  const { id } = await params;
+  const { data: recipe, error } = await getRecipeById(id);
 
   if (error || !recipe) {
     notFound();
