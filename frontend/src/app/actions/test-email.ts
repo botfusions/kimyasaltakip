@@ -1,27 +1,32 @@
-'use server';
+"use server";
 
-import { sendEmail } from '@/lib/email';
-import { getSettingByKey } from './settings';
+import { sendEmail } from "../../lib/email";
+import { getSettingByKey } from "./settings";
 
 /**
  * Test email gönderimi (Sadece test amaçlı)
  */
 export async function sendTestEmail() {
-    try {
-        // Ayarlardan rapor alıcılarını al
-        const { data: setting, error: settingError } = await getSettingByKey('REPORT_RECEIVER_EMAILS');
-        
-        if (settingError && settingError.code !== 'PGRST116') { // PGRST116 is "no rows found"
-            console.error('Error fetching settings:', settingError);
-        }
+  try {
+    // Ayarlardan rapor alıcılarını al
+    const { data: setting, error: settingError } = await getSettingByKey(
+      "REPORT_RECEIVER_EMAILS",
+    );
 
-        const recipientsValue = setting?.value || 'aziz.guc@goldstarteks.com';
-        const recipients = recipientsValue.split(',').map((email: string) => email.trim());
+    if (settingError && settingError.code !== "PGRST116") {
+      // PGRST116 is "no rows found"
+      console.error("Error fetching settings:", settingError);
+    }
 
-        const result = await sendEmail({
-            to: recipients,
-            subject: 'Kimyasal Takip Sistemi - Test Email',
-            html: `
+    const recipientsValue = setting?.value || "aziz.guc@goldstarteks.com";
+    const recipients = recipientsValue
+      .split(",")
+      .map((email: string) => email.trim());
+
+    const result = await sendEmail({
+      to: recipients,
+      subject: "Kimyasal Takip Sistemi - Test Email",
+      html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h1 style="color: #2563eb;">🧪 Kimyasal Takip Sistemi</h1>
                     <p>Merhaba,</p>
@@ -39,25 +44,26 @@ export async function sendTestEmail() {
                     </p>
                 </div>
             `,
-            text: 'Kimyasal Takip Sistemi test emaili. Email sisteminiz başarıyla çalışıyor!',
-        });
+      text: "Kimyasal Takip Sistemi test emaili. Email sisteminiz başarıyla çalışıyor!",
+    });
 
-        if (result.success) {
-            return {
-                success: true,
-                message: 'Test email başarıyla gönderildi! Lütfen gelen kutunuzu kontrol edin.'
-            };
-        } else {
-            return {
-                success: false,
-                message: `Email gönderilemedi: ${result.error}`
-            };
-        }
-    } catch (error: any) {
-        console.error('Test email hatası:', error);
-        return {
-            success: false,
-            message: `Hata: ${error.message}`
-        };
+    if (result.success) {
+      return {
+        success: true,
+        message:
+          "Test email başarıyla gönderildi! Lütfen gelen kutunuzu kontrol edin.",
+      };
+    } else {
+      return {
+        success: false,
+        message: `Email gönderilemedi: ${result.error}`,
+      };
     }
+  } catch (error: any) {
+    console.error("Test email hatası:", error);
+    return {
+      success: false,
+      message: `Hata: ${error.message}`,
+    };
+  }
 }

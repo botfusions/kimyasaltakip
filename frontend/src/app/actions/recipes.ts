@@ -1,84 +1,87 @@
-'use server';
+"use server";
 
-import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from './auth';
-import { sendEmail } from '@/lib/email';
-import { sendTelegramAlert } from '@/lib/telegram';
-import { getSettingByKey } from '@/app/actions/settings';
-import { checkRecipeCompliance } from './compliance';
-import { addStockMovementInternal } from './stock';
+import { revalidatePath } from "next/cache";
+import { createClient } from "../../lib/supabase/server";
+import { getCurrentUser } from "./auth";
+import { sendEmail } from "../../lib/email";
+import { sendTelegramAlert } from "../../lib/telegram";
+import { getSettingByKey } from "./settings";
+import { checkRecipeCompliance } from "./compliance";
+import { addStockMovementInternal } from "./stock";
 
 /**
  * Check if current user has recipe management access (admin or lab)
  */
 async function checkRecipeAccess() {
-    const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser();
 
-    if (!currentUser || !['admin', 'lab'].includes(currentUser.role)) {
-        throw new Error('Bu işlem için yetkiniz yok');
-    }
+  if (!currentUser || !["admin", "lab"].includes(currentUser.role)) {
+    throw new Error("Bu işlem için yetkiniz yok");
+  }
 
-    return currentUser;
+  return currentUser;
 }
 
 /**
  * Get all recipes with optional filters
  */
 export async function getRecipes(filters?: {
-    product_id?: string;
-    status?: string;
-    search?: string;
+  product_id?: string;
+  status?: string;
+  search?: string;
 }) {
-    await checkRecipeAccess();
+  await checkRecipeAccess();
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    let query = supabase
-        .from('kts_recipes')
-        .select(`
+  let query = supabase
+    .from("kts_recipes")
+    .select(
+      `
             *,
             product:kts_products(id, code, name),
             created_by_user:kts_users!recipes_created_by_fkey(id, name),
             approved_by_user:kts_users!recipes_approved_by_fkey(id, name, signature_id)
-        `)
-        .order('created_at', { ascending: false });
+        `,
+    )
+    .order("created_at", { ascending: false });
 
-    // Apply filters
-    if (filters?.product_id) {
-        query = query.eq('product_id', filters.product_id);
-    }
+  // Apply filters
+  if (filters?.product_id) {
+    query = query.eq("product_id", filters.product_id);
+  }
 
-    if (filters?.status) {
-        query = query.eq('status', filters.status);
-    }
+  if (filters?.status) {
+    query = query.eq("status", filters.status);
+  }
 
-    if (filters?.search) {
-        query = query.or(`version_code.ilike.%${filters.search}%`);
-    }
+  if (filters?.search) {
+    query = query.or(`version_code.ilike.%${filters.search}%`);
+  }
 
-    const { data, error } = await query;
+  const { data, error } = await query;
 
-    if (error) {
-        return {
-            error: 'Reçeteler yüklenirken hata oluştu',
-        };
-    }
+  if (error) {
+    return {
+      error: "Reçeteler yüklenirken hata oluştu",
+    };
+  }
 
-    return { data };
+  return { data };
 }
 
 /**
  * Get single recipe by ID with full details
  */
 export async function getRecipeById(recipeId: string) {
-    await checkRecipeAccess();
+  await checkRecipeAccess();
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { data, error } = await supabase
-        .from('kts_recipes')
-        .select(`
+  const { data, error } = await supabase
+    .from("kts_recipes")
+    .select(
+      `
             *,
             product:kts_products(id, code, name),
             created_by_user:kts_users!recipes_created_by_fkey(id, name, email),
@@ -93,311 +96,342 @@ export async function getRecipeById(recipeId: string) {
                 notes,
                 material:kts_materials(id, code, name, unit, safety_info)
             )
-        `)
-        .eq('id', recipeId)
-        .single();
+        `,
+    )
+    .eq("id", recipeId)
+    .single();
 
-    if (error) {
-        console.error('getRecipeById SUPABASE ERROR:', error);
-        return { error: `DEBUG: DB Error - ${error.message} (Code: ${error.code})` };
-    }
+  if (error) {
+    console.error("getRecipeById SUPABASE ERROR:", error);
+    return {
+      error: `DEBUG: DB Error - ${error.message} (Code: ${error.code})`,
+    };
+  }
 
-    return { data };
+  return { data };
 }
 
 /**
  * Create new recipe (Lab user only - NO signature ID required)
  */
 export async function createRecipe(formData: FormData) {
-    const currentUser = await checkRecipeAccess();
+  const currentUser = await checkRecipeAccess();
 
-    // Only lab and admin users can create recipes
-    if (!['lab', 'admin'].includes(currentUser.role)) {
-        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete oluşturabilir' };
+  // Only lab and admin users can create recipes
+  if (!["lab", "admin"].includes(currentUser.role)) {
+    return {
+      error:
+        "Sadece laboratuvar ve yönetici kullanıcıları reçete oluşturabilir",
+    };
+  }
+
+  const productId = formData.get("product_id") as string;
+  const versionCode = formData.get("version_code") as string;
+  const notes = (formData.get("notes") as string) || null;
+  const itemsJson = formData.get("items") as string;
+
+  // New PDF form fields
+  const recipeNameNo = (formData.get("recipe_name_no") as string) || null;
+  const colorCode = (formData.get("color_code") as string) || null;
+  const yarnCode = (formData.get("yarn_code") as string) || null;
+  const planningDate = (formData.get("planning_date") as string) || null;
+  const startDate = (formData.get("start_date") as string) || null;
+  const finishDate = (formData.get("finish_date") as string) || null;
+  const batchRatio = formData.get("batch_ratio") as string;
+  const processWashCount = formData.get("process_wash_count") as string;
+  const cauldronQuantity = formData.get("cauldron_quantity") as string;
+
+  // Additional fields from RecipeEditor
+  const orderCode = (formData.get("order_code") as string) || null;
+  const processInfo = (formData.get("process_info") as string) || null;
+  const totalWeight = formData.get("total_weight") as string;
+  const machineCode = (formData.get("machine_code") as string) || null;
+  const colorName = (formData.get("color_name") as string) || null;
+  const workOrderDate = (formData.get("work_order_date") as string) || null;
+  const bathVolume = formData.get("bath_volume") as string;
+  const sipNo = (formData.get("sip_no") as string) || null;
+  const customerRefNo = (formData.get("customer_ref_no") as string) || null;
+  const customerName = (formData.get("customer_name") as string) || null;
+  const customerSipMt = formData.get("customer_sip_mt") as string;
+  const customerOrderNo = (formData.get("customer_order_no") as string) || null;
+  const yarnType = (formData.get("yarn_type") as string) || null;
+
+  // Auto-generate versionCode if not provided
+  const finalVersionCode = versionCode || orderCode || `V-${Date.now()}`;
+
+  if (!itemsJson) {
+    return { error: "Lütfen malzeme bilgilerini doldurun" };
+  }
+
+  let items;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    return { error: "Geçersiz malzeme verisi" };
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return { error: "En az bir malzeme eklemelisiniz" };
+  }
+
+  const supabase = await createClient();
+
+  // Get a default usage type if not provided (it's mandatory in DB)
+  let usageTypeId = formData.get("usage_type_id") as string;
+  if (!usageTypeId) {
+    const { data: usageTypes } = await supabase
+      .from("kts_usage_types")
+      .select("id")
+      .limit(1);
+    if (usageTypes && usageTypes.length > 0) {
+      usageTypeId = usageTypes[0].id;
     }
+  }
 
-    const productId = formData.get('product_id') as string;
-    const versionCode = formData.get('version_code') as string;
-    const notes = formData.get('notes') as string || null;
-    const itemsJson = formData.get('items') as string;
+  // Insert recipe with status 'draft'
+  const { data: recipe, error: recipeError } = await supabase
+    .from("kts_recipes")
+    .insert({
+      product_id: productId || null,
+      usage_type_id: usageTypeId, // Add this back
+      version_code: finalVersionCode,
+      status: "draft",
+      notes,
+      created_by: currentUser.id,
+      recipe_name_no: recipeNameNo || orderCode, // Map orderCode to existing recipe_name_no as a fallback
+      color_code: colorCode,
+      yarn_code: yarnCode || yarnType, // Map yarnType to existing yarn_code
+      planning_date: planningDate,
+      start_date: startDate,
+      finish_date: finishDate,
+      batch_ratio: batchRatio, // This exists in schema
+      process_wash_count: processWashCount
+        ? parseInt(processWashCount, 10)
+        : null,
+      cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
+      // Only keeping available columns
+    })
+    .select()
+    .single();
 
-    // New PDF form fields
-    const recipeNameNo = formData.get('recipe_name_no') as string || null;
-    const colorCode = formData.get('color_code') as string || null;
-    const yarnCode = formData.get('yarn_code') as string || null;
-    const planningDate = formData.get('planning_date') as string || null;
-    const startDate = formData.get('start_date') as string || null;
-    const finishDate = formData.get('finish_date') as string || null;
-    const batchRatio = formData.get('batch_ratio') as string;
-    const processWashCount = formData.get('process_wash_count') as string;
-    const cauldronQuantity = formData.get('cauldron_quantity') as string;
-
-    // Additional fields from RecipeEditor
-    const orderCode = formData.get('order_code') as string || null;
-    const processInfo = formData.get('process_info') as string || null;
-    const totalWeight = formData.get('total_weight') as string;
-    const machineCode = formData.get('machine_code') as string || null;
-    const colorName = formData.get('color_name') as string || null;
-    const workOrderDate = formData.get('work_order_date') as string || null;
-    const bathVolume = formData.get('bath_volume') as string;
-    const sipNo = formData.get('sip_no') as string || null;
-    const customerRefNo = formData.get('customer_ref_no') as string || null;
-    const customerName = formData.get('customer_name') as string || null;
-    const customerSipMt = formData.get('customer_sip_mt') as string;
-    const customerOrderNo = formData.get('customer_order_no') as string || null;
-    const yarnType = formData.get('yarn_type') as string || null;
-
-    // Auto-generate versionCode if not provided
-    const finalVersionCode = versionCode || orderCode || `V-${Date.now()}`;
-
-    if (!itemsJson) {
-        return { error: 'Lütfen malzeme bilgilerini doldurun' };
+  if (recipeError) {
+    if (recipeError.code === "23505") {
+      return { error: "Bu versiyon kodu zaten kullanılıyor" };
     }
-
-    let items;
-    try {
-        items = JSON.parse(itemsJson);
-    } catch {
-        return { error: 'Geçersiz malzeme verisi' };
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-        return { error: 'En az bir malzeme eklemelisiniz' };
-    }
-
-    const supabase = await createClient();
-
-    // Get a default usage type if not provided (it's mandatory in DB)
-    let usageTypeId = formData.get('usage_type_id') as string;
-    if (!usageTypeId) {
-        const { data: usageTypes } = await supabase.from('kts_usage_types').select('id').limit(1);
-        if (usageTypes && usageTypes.length > 0) {
-            usageTypeId = usageTypes[0].id;
-        }
-    }
-
-    // Insert recipe with status 'draft'
-    const { data: recipe, error: recipeError } = await supabase
-        .from('kts_recipes')
-        .insert({
-            product_id: productId || null,
-            usage_type_id: usageTypeId, // Add this back
-            version_code: finalVersionCode,
-            status: 'draft',
-            notes,
-            created_by: currentUser.id,
-            recipe_name_no: recipeNameNo || orderCode, // Map orderCode to existing recipe_name_no as a fallback
-            color_code: colorCode,
-            yarn_code: yarnCode || yarnType, // Map yarnType to existing yarn_code
-            planning_date: planningDate,
-            start_date: startDate,
-            finish_date: finishDate,
-            batch_ratio: batchRatio, // This exists in schema
-            process_wash_count: processWashCount ? parseInt(processWashCount, 10) : null,
-            cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
-            // Only keeping available columns
-        })
-        .select()
-        .single();
-
-    if (recipeError) {
-        if (recipeError.code === '23505') {
-            return { error: 'Bu versiyon kodu zaten kullanılıyor' };
-        }
-        console.error('Reçete oluşturma hatası (DB):', recipeError);
-        await sendTelegramAlert(`Reçete oluşturma hatası (DB Insert)`, { error: recipeError, user: currentUser.id });
-        return { error: 'Reçete oluşturulurken hata oluştu' };
-    }
-
-    // Insert recipe items
-    const recipeItems = items.map((item: any) => ({
-        recipe_id: recipe.id,
-        material_id: item.material_id,
-        quantity: parseFloat(item.quantity),
-        percentage: parseFloat(item.percentage),
-        unit: item.unit || 'kg',
-        notes: item.notes || null,
-    }));
-
-    const { error: itemsError } = await supabase
-        .from('kts_recipe_items')
-        .insert(recipeItems);
-
-    if (itemsError) {
-        // Rollback recipe if items insertion fails
-        await supabase.from('kts_recipes').delete().eq('id', recipe.id);
-        await sendTelegramAlert(`Reçete malzeme ekleme hatası`, { error: itemsError, user: currentUser.id });
-        return { error: 'Malzemeler eklenirken hata oluştu' };
-    }
-
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipe.id,
-        action: 'INSERT',
-        user_id: currentUser.id,
-        changes: { new: { product_id: productId, version_code: versionCode, status: 'draft' } },
+    console.error("Reçete oluşturma hatası (DB):", recipeError);
+    await sendTelegramAlert(`Reçete oluşturma hatası (DB Insert)`, {
+      error: recipeError,
+      user: currentUser.id,
     });
+    return { error: "Reçete oluşturulurken hata oluştu" };
+  }
 
-    revalidatePath('/dashboard/recipes');
+  // Insert recipe items
+  const recipeItems = items.map((item: any) => ({
+    recipe_id: recipe.id,
+    material_id: item.material_id,
+    quantity: parseFloat(item.quantity),
+    percentage: parseFloat(item.percentage),
+    unit: item.unit || "kg",
+    notes: item.notes || null,
+  }));
 
-    revalidatePath('/dashboard/recipes');
+  const { error: itemsError } = await supabase
+    .from("kts_recipe_items")
+    .insert(recipeItems);
 
-    // Perform automatic compliance check
-    const complianceResult = await checkRecipeCompliance(recipe.id);
+  if (itemsError) {
+    // Rollback recipe if items insertion fails
+    await supabase.from("kts_recipes").delete().eq("id", recipe.id);
+    await sendTelegramAlert(`Reçete malzeme ekleme hatası`, {
+      error: itemsError,
+      user: currentUser.id,
+    });
+    return { error: "Malzemeler eklenirken hata oluştu" };
+  }
 
-    return { success: true, data: recipe, compliance: complianceResult };
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipe.id,
+    action: "INSERT",
+    user_id: currentUser.id,
+    changes: {
+      new: {
+        product_id: productId,
+        version_code: versionCode,
+        status: "draft",
+      },
+    },
+  });
+
+  revalidatePath("/dashboard/recipes");
+
+  revalidatePath("/dashboard/recipes");
+
+  // Perform automatic compliance check
+  const complianceResult = await checkRecipeCompliance(recipe.id);
+
+  return { success: true, data: recipe, compliance: complianceResult };
 }
 
 /**
  * Update recipe (Lab user only - NO signature ID required)
  */
 export async function updateRecipe(recipeId: string, formData: FormData) {
-    const currentUser = await checkRecipeAccess();
+  const currentUser = await checkRecipeAccess();
 
-    if (!['lab', 'admin'].includes(currentUser.role)) {
-        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete düzenleyebilir' };
+  if (!["lab", "admin"].includes(currentUser.role)) {
+    return {
+      error:
+        "Sadece laboratuvar ve yönetici kullanıcıları reçete düzenleyebilir",
+    };
+  }
+
+  const supabase = await createClient();
+
+  // Check if recipe exists and is editable
+  const { data: existingRecipe } = await supabase
+    .from("kts_recipes")
+    .select("status, created_by")
+    .eq("id", recipeId)
+    .single();
+
+  if (!existingRecipe) {
+    return { error: "Reçete bulunamadı" };
+  }
+
+  if (existingRecipe.status === "approved") {
+    return { error: "Onaylanmış reçeteler düzenlenemez" };
+  }
+
+  const versionCode = formData.get("version_code") as string;
+  const notes = (formData.get("notes") as string) || null;
+  const itemsJson = formData.get("items") as string;
+
+  // New PDF form fields
+  const recipeNameNo = (formData.get("recipe_name_no") as string) || null;
+  const colorCode = (formData.get("color_code") as string) || null;
+  const yarnCode = (formData.get("yarn_code") as string) || null;
+  const planningDate = (formData.get("planning_date") as string) || null;
+  const startDate = (formData.get("start_date") as string) || null;
+  const finishDate = (formData.get("finish_date") as string) || null;
+  const batchRatio = formData.get("batch_ratio") as string;
+  const processWashCount = formData.get("process_wash_count") as string;
+  const cauldronQuantity = formData.get("cauldron_quantity") as string;
+
+  // Additional fields from RecipeEditor
+  const orderCode = (formData.get("order_code") as string) || null;
+  const processInfo = (formData.get("process_info") as string) || null;
+  const totalWeight = formData.get("total_weight") as string;
+  const machineCode = (formData.get("machine_code") as string) || null;
+  const colorName = (formData.get("color_name") as string) || null;
+  const workOrderDate = (formData.get("work_order_date") as string) || null;
+  const bathVolume = formData.get("bath_volume") as string;
+  const sipNo = (formData.get("sip_no") as string) || null;
+  const customerRefNo = (formData.get("customer_ref_no") as string) || null;
+  const customerName = (formData.get("customer_name") as string) || null;
+  const customerSipMt = formData.get("customer_sip_mt") as string;
+  const customerOrderNo = (formData.get("customer_order_no") as string) || null;
+  const yarnType = (formData.get("yarn_type") as string) || null;
+
+  if (!versionCode || !itemsJson) {
+    return { error: "Lütfen tüm zorunlu alanları doldurun" };
+  }
+
+  let items;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    return { error: "Geçersiz malzeme verisi" };
+  }
+
+  // Update recipe
+  const { data: recipe, error: recipeError } = await supabase
+    .from("kts_recipes")
+    .update({
+      version_code: versionCode,
+      notes,
+      updated_at: new Date().toISOString(),
+      recipe_name_no: recipeNameNo,
+      color_code: colorCode,
+      yarn_code: yarnCode,
+      planning_date: planningDate,
+      start_date: startDate,
+      finish_date: finishDate,
+      batch_ratio: batchRatio ? parseFloat(batchRatio) : null,
+      process_wash_count: processWashCount
+        ? parseInt(processWashCount, 10)
+        : null,
+      cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
+
+      // Additional fields
+      order_code: orderCode,
+      process_info: processInfo,
+      total_weight: totalWeight ? parseFloat(totalWeight) : null,
+      machine_code: machineCode,
+      color_name: colorName,
+      work_order_date: workOrderDate,
+      bath_volume: bathVolume ? parseFloat(bathVolume) : null,
+      sip_no: sipNo,
+      customer_ref_no: customerRefNo,
+      customer_name: customerName,
+      customer_sip_mt: customerSipMt ? parseFloat(customerSipMt) : null,
+      customer_order_no: customerOrderNo,
+      yarn_type: yarnType,
+    })
+    .eq("id", recipeId)
+    .select()
+    .single();
+
+  if (recipeError) {
+    if (recipeError.code === "23505") {
+      return { error: "Bu versiyon kodu zaten kullanılıyor" };
     }
-
-    const supabase = await createClient();
-
-    // Check if recipe exists and is editable
-    const { data: existingRecipe } = await supabase
-        .from('kts_recipes')
-        .select('status, created_by')
-        .eq('id', recipeId)
-        .single();
-
-    if (!existingRecipe) {
-        return { error: 'Reçete bulunamadı' };
-    }
-
-    if (existingRecipe.status === 'approved') {
-        return { error: 'Onaylanmış reçeteler düzenlenemez' };
-    }
-
-    const versionCode = formData.get('version_code') as string;
-    const notes = formData.get('notes') as string || null;
-    const itemsJson = formData.get('items') as string;
-
-    // New PDF form fields
-    const recipeNameNo = formData.get('recipe_name_no') as string || null;
-    const colorCode = formData.get('color_code') as string || null;
-    const yarnCode = formData.get('yarn_code') as string || null;
-    const planningDate = formData.get('planning_date') as string || null;
-    const startDate = formData.get('start_date') as string || null;
-    const finishDate = formData.get('finish_date') as string || null;
-    const batchRatio = formData.get('batch_ratio') as string;
-    const processWashCount = formData.get('process_wash_count') as string;
-    const cauldronQuantity = formData.get('cauldron_quantity') as string;
-
-    // Additional fields from RecipeEditor
-    const orderCode = formData.get('order_code') as string || null;
-    const processInfo = formData.get('process_info') as string || null;
-    const totalWeight = formData.get('total_weight') as string;
-    const machineCode = formData.get('machine_code') as string || null;
-    const colorName = formData.get('color_name') as string || null;
-    const workOrderDate = formData.get('work_order_date') as string || null;
-    const bathVolume = formData.get('bath_volume') as string;
-    const sipNo = formData.get('sip_no') as string || null;
-    const customerRefNo = formData.get('customer_ref_no') as string || null;
-    const customerName = formData.get('customer_name') as string || null;
-    const customerSipMt = formData.get('customer_sip_mt') as string;
-    const customerOrderNo = formData.get('customer_order_no') as string || null;
-    const yarnType = formData.get('yarn_type') as string || null;
-
-    if (!versionCode || !itemsJson) {
-        return { error: 'Lütfen tüm zorunlu alanları doldurun' };
-    }
-
-    let items;
-    try {
-        items = JSON.parse(itemsJson);
-    } catch {
-        return { error: 'Geçersiz malzeme verisi' };
-    }
-
-    // Update recipe
-    const { data: recipe, error: recipeError } = await supabase
-        .from('kts_recipes')
-        .update({
-            version_code: versionCode,
-            notes,
-            updated_at: new Date().toISOString(),
-            recipe_name_no: recipeNameNo,
-            color_code: colorCode,
-            yarn_code: yarnCode,
-            planning_date: planningDate,
-            start_date: startDate,
-            finish_date: finishDate,
-            batch_ratio: batchRatio ? parseFloat(batchRatio) : null,
-            process_wash_count: processWashCount ? parseInt(processWashCount, 10) : null,
-            cauldron_quantity: cauldronQuantity ? parseFloat(cauldronQuantity) : null,
-
-            // Additional fields
-            order_code: orderCode,
-            process_info: processInfo,
-            total_weight: totalWeight ? parseFloat(totalWeight) : null,
-            machine_code: machineCode,
-            color_name: colorName,
-            work_order_date: workOrderDate,
-            bath_volume: bathVolume ? parseFloat(bathVolume) : null,
-            sip_no: sipNo,
-            customer_ref_no: customerRefNo,
-            customer_name: customerName,
-            customer_sip_mt: customerSipMt ? parseFloat(customerSipMt) : null,
-            customer_order_no: customerOrderNo,
-            yarn_type: yarnType,
-        })
-        .eq('id', recipeId)
-        .select()
-        .single();
-
-    if (recipeError) {
-        if (recipeError.code === '23505') {
-            return { error: 'Bu versiyon kodu zaten kullanılıyor' };
-        }
-        await sendTelegramAlert(`Reçete güncelleme hatası`, { error: recipeError, user: currentUser.id });
-        return { error: 'Reçete güncellenirken hata oluştu' };
-    }
-
-    // Delete old items and insert new ones
-    await supabase.from('kts_recipe_items').delete().eq('recipe_id', recipeId);
-
-    const recipeItems = items.map((item: any) => ({
-        recipe_id: recipeId,
-        material_id: item.material_id,
-        quantity: parseFloat(item.quantity),
-        percentage: parseFloat(item.percentage),
-        unit: item.unit || 'kg',
-        notes: item.notes || null,
-    }));
-
-    const { error: itemsError } = await supabase
-        .from('kts_recipe_items')
-        .insert(recipeItems);
-
-    if (itemsError) {
-        return { error: 'Malzemeler güncellenirken hata oluştu' };
-    }
-
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipeId,
-        action: 'UPDATE',
-        user_id: currentUser.id,
-        changes: { new: { version_code: versionCode, notes } },
+    await sendTelegramAlert(`Reçete güncelleme hatası`, {
+      error: recipeError,
+      user: currentUser.id,
     });
+    return { error: "Reçete güncellenirken hata oluştu" };
+  }
 
-    revalidatePath('/dashboard/recipes');
+  // Delete old items and insert new ones
+  await supabase.from("kts_recipe_items").delete().eq("recipe_id", recipeId);
 
-    revalidatePath('/dashboard/recipes');
+  const recipeItems = items.map((item: any) => ({
+    recipe_id: recipeId,
+    material_id: item.material_id,
+    quantity: parseFloat(item.quantity),
+    percentage: parseFloat(item.percentage),
+    unit: item.unit || "kg",
+    notes: item.notes || null,
+  }));
 
-    // Perform automatic compliance check
-    const complianceResult = await checkRecipeCompliance(recipeId);
+  const { error: itemsError } = await supabase
+    .from("kts_recipe_items")
+    .insert(recipeItems);
 
-    return { success: true, data: recipe, compliance: complianceResult };
+  if (itemsError) {
+    return { error: "Malzemeler güncellenirken hata oluştu" };
+  }
+
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipeId,
+    action: "UPDATE",
+    user_id: currentUser.id,
+    changes: { new: { version_code: versionCode, notes } },
+  });
+
+  revalidatePath("/dashboard/recipes");
+
+  revalidatePath("/dashboard/recipes");
+
+  // Perform automatic compliance check
+  const complianceResult = await checkRecipeCompliance(recipeId);
+
+  return { success: true, data: recipe, compliance: complianceResult };
 }
 
 /**
@@ -405,211 +439,234 @@ export async function updateRecipe(recipeId: string, formData: FormData) {
  * This is called AFTER customer acceptance
  */
 export async function approveRecipe(recipeId: string, signatureId: string) {
-    const currentUser = await checkRecipeAccess();
+  const currentUser = await checkRecipeAccess();
 
-    if (!['lab', 'admin'].includes(currentUser.role)) {
-        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları reçete onaylayabilir' };
-    }
+  if (!["lab", "admin"].includes(currentUser.role)) {
+    return {
+      error:
+        "Sadece laboratuvar ve yönetici kullanıcıları reçete onaylayabilir",
+    };
+  }
 
-    if (!signatureId || signatureId.length < 4 || signatureId.length > 6) {
-        return { error: 'Geçersiz imza ID formatı' };
-    }
+  if (!signatureId || signatureId.length < 4 || signatureId.length > 6) {
+    return { error: "Geçersiz imza ID formatı" };
+  }
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    // Verify signature ID matches current user
-    const { data: user } = await supabase
-        .from('kts_users')
-        .select('signature_id')
-        .eq('id', currentUser.id)
-        .single();
+  // Verify signature ID matches current user
+  const { data: user } = await supabase
+    .from("kts_users")
+    .select("signature_id")
+    .eq("id", currentUser.id)
+    .single();
 
-    if (!user?.signature_id || user.signature_id !== signatureId) {
-        return { error: 'İmza ID hatalı - lütfen doğru ID\'yi girin' };
-    }
+  if (!user?.signature_id || user.signature_id !== signatureId) {
+    return { error: "İmza ID hatalı - lütfen doğru ID'yi girin" };
+  }
 
-    // Check recipe status
-    const { data: recipe } = await supabase
-        .from('kts_recipes')
-        .select('status, created_by')
-        .eq('id', recipeId)
-        .single();
+  // Check recipe status
+  const { data: recipe } = await supabase
+    .from("kts_recipes")
+    .select("status, created_by")
+    .eq("id", recipeId)
+    .single();
 
-    if (!recipe) {
-        return { error: 'Reçete bulunamadı' };
-    }
+  if (!recipe) {
+    return { error: "Reçete bulunamadı" };
+  }
 
-    if (recipe.status === 'approved') {
-        return { error: 'Bu reçete zaten onaylanmış' };
-    }
+  if (recipe.status === "approved") {
+    return { error: "Bu reçete zaten onaylanmış" };
+  }
 
-    // Update recipe to approved status
-    const { error: updateError } = await supabase
-        .from('kts_recipes')
-        .update({
-            status: 'approved',
-            approved_by: currentUser.id,
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', recipeId);
+  // Update recipe to approved status
+  const { error: updateError } = await supabase
+    .from("kts_recipes")
+    .update({
+      status: "approved",
+      approved_by: currentUser.id,
+      approved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", recipeId);
 
-    if (updateError) {
-        await sendTelegramAlert(`Reçete onaylama hatası`, { error: updateError, user: currentUser.id });
-        return { error: 'Reçete onaylanırken hata oluştu' };
-    }
-
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipeId,
-        action: 'UPDATE',
-        user_id: currentUser.id,
-        changes: {
-            old: { status: recipe.status },
-            new: { status: 'approved', approved_by: currentUser.id },
-        },
+  if (updateError) {
+    await sendTelegramAlert(`Reçete onaylama hatası`, {
+      error: updateError,
+      user: currentUser.id,
     });
+    return { error: "Reçete onaylanırken hata oluştu" };
+  }
 
-    // ---------------------------------------------------------
-    // AUTOMATIC STOCK DEDUCTION & PRODUCTION LOGGING
-    // ---------------------------------------------------------
-    try {
-        // 1. Get Recipe Details (Items & Quantities)
-        const { data: recipeDetails } = await supabase
-            .from('kts_recipes')
-            .select(`
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipeId,
+    action: "UPDATE",
+    user_id: currentUser.id,
+    changes: {
+      old: { status: recipe.status },
+      new: { status: "approved", approved_by: currentUser.id },
+    },
+  });
+
+  // ---------------------------------------------------------
+  // AUTOMATIC STOCK DEDUCTION & PRODUCTION LOGGING
+  // ---------------------------------------------------------
+  try {
+    // 1. Get Recipe Details (Items & Quantities)
+    const { data: recipeDetails } = await supabase
+      .from("kts_recipes")
+      .select(
+        `
                 *,
                 recipe_items:kts_recipe_items(
                     material_id,
                     quantity,
                     unit
                 )
-            `)
-            .eq('id', recipeId)
-            .single();
+            `,
+      )
+      .eq("id", recipeId)
+      .single();
 
-        if (recipeDetails) {
-            const batchNumber = `PRD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${recipeId.slice(0, 4).toUpperCase()}`;
-            const totalQuantity = recipeDetails.cauldron_quantity ||
-                (recipeDetails.recipe_items as any[])?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
+    if (recipeDetails) {
+      const batchNumber = `PRD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${recipeId.slice(0, 4).toUpperCase()}`;
+      const totalQuantity =
+        recipeDetails.cauldron_quantity ||
+        (recipeDetails.recipe_items as any[])?.reduce(
+          (sum, item) => sum + Number(item.quantity),
+          0,
+        ) ||
+        0;
 
-            // 2. Create Production Log
-            const { data: prodLog, error: logError } = await supabase
-                .from('kts_production_logs')
-                .insert({
-                    recipe_id: recipeId,
-                    batch_number: batchNumber,
-                    quantity: totalQuantity,
-                    unit: 'kg', // Defaulting to kg as per schema default, though recipe might vary
-                    status: 'completed', // Auto-completed for this workflow
-                    operator_id: currentUser.id,
-                    completed_at: new Date().toISOString(),
-                    started_at: new Date().toISOString(),
-                    notes: 'Otomatik stok düşümü ile oluşturuldu (Reçete Onayı)',
-                })
-                .select()
-                .single();
+      // 2. Create Production Log
+      const { data: prodLog, error: logError } = await supabase
+        .from("kts_production_logs")
+        .insert({
+          recipe_id: recipeId,
+          batch_number: batchNumber,
+          quantity: totalQuantity,
+          unit: "kg", // Defaulting to kg as per schema default, though recipe might vary
+          status: "completed", // Auto-completed for this workflow
+          operator_id: currentUser.id,
+          completed_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+          notes: "Otomatik stok düşümü ile oluşturuldu (Reçete Onayı)",
+        })
+        .select()
+        .single();
 
-            if (!logError && prodLog) {
-                // 3. Process Each Material
-                const items = (recipeDetails.recipe_items as any[]) || [];
+      if (!logError && prodLog) {
+        // 3. Process Each Material
+        const items = (recipeDetails.recipe_items as any[]) || [];
 
-                for (const item of items) {
-                    // Deduct Stock
-                    await addStockMovementInternal({
-                        materialId: item.material_id,
-                        movementType: 'out',
-                        quantity: Number(item.quantity),
-                        userId: currentUser.id,
-                        referenceType: 'production_log',
-                        referenceId: prodLog.id,
-                        notes: `Reçete Onayı: ${recipeDetails.version_code}`,
-                    });
+        for (const item of items) {
+          // Deduct Stock
+          await addStockMovementInternal({
+            materialId: item.material_id,
+            movementType: "out",
+            quantity: Number(item.quantity),
+            userId: currentUser.id,
+            referenceType: "production_log",
+            referenceId: prodLog.id,
+            notes: `Reçete Onayı: ${recipeDetails.version_code}`,
+          });
 
-                    // Create Production Material Record
-                    await supabase.from('kts_production_materials').insert({
-                        production_log_id: prodLog.id,
-                        material_id: item.material_id,
-                        planned_quantity: Number(item.quantity),
-                        actual_quantity: Number(item.quantity), // Assuming exact usage for auto-deduction
-                        unit: item.unit,
-                        stock_deducted: true,
-                        deducted_at: new Date().toISOString(),
-                    });
-                }
-            } else {
-                console.error('Production Log creation failed during approval:', logError);
-            }
+          // Create Production Material Record
+          await supabase.from("kts_production_materials").insert({
+            production_log_id: prodLog.id,
+            material_id: item.material_id,
+            planned_quantity: Number(item.quantity),
+            actual_quantity: Number(item.quantity), // Assuming exact usage for auto-deduction
+            unit: item.unit,
+            stock_deducted: true,
+            deducted_at: new Date().toISOString(),
+          });
         }
-    } catch (stockError) {
-        console.error('Stock deduction failed during approval:', stockError);
-        // We do NOT fail the approval itself, but we log the error.
-        // In a perfect world, we'd use a transaction or saga.
-        await sendTelegramAlert(`Reçete onaylandı ancak stok düşümü başarısız oldu: ${recipeId}`, { error: stockError, user: currentUser.id });
+      } else {
+        console.error(
+          "Production Log creation failed during approval:",
+          logError,
+        );
+      }
     }
+  } catch (stockError) {
+    console.error("Stock deduction failed during approval:", stockError);
+    // We do NOT fail the approval itself, but we log the error.
+    // In a perfect world, we'd use a transaction or saga.
+    await sendTelegramAlert(
+      `Reçete onaylandı ancak stok düşümü başarısız oldu: ${recipeId}`,
+      { error: stockError, user: currentUser.id },
+    );
+  }
 
-    revalidatePath('/dashboard/recipes');
+  revalidatePath("/dashboard/recipes");
 
-    return { success: true };
+  return { success: true };
 }
 
 /**
  * Reject recipe for revision (Lab user only - NO signature ID required)
  */
-export async function rejectRecipeForRevision(recipeId: string, reason: string) {
-    const currentUser = await checkRecipeAccess();
+export async function rejectRecipeForRevision(
+  recipeId: string,
+  reason: string,
+) {
+  const currentUser = await checkRecipeAccess();
 
-    if (!['lab', 'admin'].includes(currentUser.role)) {
-        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları bu işlemi yapabilir' };
-    }
+  if (!["lab", "admin"].includes(currentUser.role)) {
+    return {
+      error: "Sadece laboratuvar ve yönetici kullanıcıları bu işlemi yapabilir",
+    };
+  }
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { data: recipe } = await supabase
-        .from('kts_recipes')
-        .select('status')
-        .eq('id', recipeId)
-        .single();
+  const { data: recipe } = await supabase
+    .from("kts_recipes")
+    .select("status")
+    .eq("id", recipeId)
+    .single();
 
-    if (!recipe) {
-        return { error: 'Reçete bulunamadı' };
-    }
+  if (!recipe) {
+    return { error: "Reçete bulunamadı" };
+  }
 
-    if (recipe.status === 'approved') {
-        return { error: 'Onaylanmış reçeteler revize edilemez' };
-    }
+  if (recipe.status === "approved") {
+    return { error: "Onaylanmış reçeteler revize edilemez" };
+  }
 
-    // Update status to rejected
-    const { error: updateError } = await supabase
-        .from('kts_recipes')
-        .update({
-            status: 'rejected',
-            notes: reason,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', recipeId);
+  // Update status to rejected
+  const { error: updateError } = await supabase
+    .from("kts_recipes")
+    .update({
+      status: "rejected",
+      notes: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", recipeId);
 
-    if (updateError) {
-        return { error: 'Reçete durumu güncellenirken hata oluştu' };
-    }
+  if (updateError) {
+    return { error: "Reçete durumu güncellenirken hata oluştu" };
+  }
 
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipeId,
-        action: 'UPDATE',
-        user_id: currentUser.id,
-        changes: {
-            old: { status: recipe.status },
-            new: { status: 'rejected', reason },
-        },
-    });
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipeId,
+    action: "UPDATE",
+    user_id: currentUser.id,
+    changes: {
+      old: { status: recipe.status },
+      new: { status: "rejected", reason },
+    },
+  });
 
-    revalidatePath('/dashboard/recipes');
+  revalidatePath("/dashboard/recipes");
 
-
-    return { success: true };
+  return { success: true };
 }
 
 /**
@@ -617,71 +674,81 @@ export async function rejectRecipeForRevision(recipeId: string, reason: string) 
  * - Updates status to 'pending'
  * - Sends email to Manager
  */
-export async function submitForApproval(recipeId: string, complianceReport: string) {
-    const currentUser = await checkRecipeAccess();
+export async function submitForApproval(
+  recipeId: string,
+  complianceReport: string,
+) {
+  const currentUser = await checkRecipeAccess();
 
-    if (!['lab', 'admin'].includes(currentUser.role)) {
-        return { error: 'Sadece laboratuvar ve yönetici kullanıcıları onaya gönderebilir' };
-    }
+  if (!["lab", "admin"].includes(currentUser.role)) {
+    return {
+      error: "Sadece laboratuvar ve yönetici kullanıcıları onaya gönderebilir",
+    };
+  }
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    // 1. Get current notes to append report
-    const { data: currentRecipe } = await supabase
-        .from('kts_recipes')
-        .select('notes, version_code, product:kts_products(name, code)')
-        .eq('id', recipeId)
-        .single();
+  // 1. Get current notes to append report
+  const { data: currentRecipe } = await supabase
+    .from("kts_recipes")
+    .select("notes, version_code, product:kts_products(name, code)")
+    .eq("id", recipeId)
+    .single();
 
-    if (!currentRecipe) return { error: 'Reçete bulunamadı' };
+  if (!currentRecipe) return { error: "Reçete bulunamadı" };
 
-    // Parse report summary safely
-    let reportSummary = 'MRLS Kontrolü Başarılı';
-    try {
-        const parsed = JSON.parse(complianceReport);
-        if (parsed.summary) reportSummary = parsed.summary;
-    } catch (e) {
-        // use default
-    }
+  // Parse report summary safely
+  let reportSummary = "MRLS Kontrolü Başarılı";
+  try {
+    const parsed = JSON.parse(complianceReport);
+    if (parsed.summary) reportSummary = parsed.summary;
+  } catch (e) {
+    // use default
+  }
 
-    const newNotes = (currentRecipe.notes || '') + `\n\n[${new Date().toLocaleDateString()}] MRLS Raporu: ${reportSummary}`;
+  const newNotes =
+    (currentRecipe.notes || "") +
+    `\n\n[${new Date().toLocaleDateString()}] MRLS Raporu: ${reportSummary}`;
 
-    const { data: recipe, error: updateError } = await supabase
-        .from('kts_recipes')
-        .update({
-            status: 'pending',
-            notes: newNotes,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', recipeId)
-        .select(`
+  const { data: recipe, error: updateError } = await supabase
+    .from("kts_recipes")
+    .update({
+      status: "pending",
+      notes: newNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", recipeId)
+    .select(
+      `
             *,
             created_by_user:kts_users!recipes_created_by_fkey(name)
-        `)
-        .single();
+        `,
+    )
+    .single();
 
-    if (updateError) {
-        return { error: 'Durum güncellenemedi: ' + updateError.message };
-    }
+  if (updateError) {
+    return { error: "Durum güncellenemedi: " + updateError.message };
+  }
 
-    // 2. Send Email to Manager
-    try {
-        const { data: managerEmailSetting } = await getSettingByKey('MANAGER_EMAIL');
-        const managerEmail = managerEmailSetting?.value || 'admin@example.com';
+  // 2. Send Email to Manager
+  try {
+    const { data: managerEmailSetting } =
+      await getSettingByKey("MANAGER_EMAIL");
+    const managerEmail = managerEmailSetting?.value || "admin@example.com";
 
-        await sendEmail({
-            to: managerEmail,
-            subject: `📌 Yeni Reçete Onayı Bekliyor: ${(currentRecipe.product as any)?.name}`,
-            html: `
+    await sendEmail({
+      to: managerEmail,
+      subject: `📌 Yeni Reçete Onayı Bekliyor: ${(currentRecipe.product as any)?.name}`,
+      html: `
                 <div style="font-family: sans-serif;">
                     <h2>Reçete Onay Talebi</h2>
-                    <p><strong>${recipe.created_by_user?.name || 'Kullanıcı'}</strong> tarafından oluşturulan reçete MRLS kontrolünden geçti ve onayınızı bekliyor.</p>
+                    <p><strong>${recipe.created_by_user?.name || "Kullanıcı"}</strong> tarafından oluşturulan reçete MRLS kontrolünden geçti ve onayınızı bekliyor.</p>
                     
                     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                         <ul style="list-style: none; padding: 0;">
                             <li><strong>Ürün:</strong> ${(currentRecipe.product as any)?.name} (${(currentRecipe.product as any)?.code})</li>
                             <li><strong>Versiyon:</strong> ${currentRecipe.version_code}</li>
-                            <li><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</li>
+                            <li><strong>Tarih:</strong> ${new Date().toLocaleDateString("tr-TR")}</li>
                             <li><strong>MRLS Durumu:</strong> ✅ Uyumlu</li>
                         </ul>
                     </div>
@@ -689,23 +756,27 @@ export async function submitForApproval(recipeId: string, complianceReport: stri
                     <p>Lütfen sisteme giriş yaparak reçeteyi inceleyin ve onaylayın.</p>
                     <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/recipes/${recipe.id}" style="display:inline-block; padding:12px 24px; background-color: #2563eb; color:white; text-decoration:none; border-radius:6px; font-weight: bold;">Reçeteyi Görüntüle</a>
                 </div>
-            `
-        });
-    } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-    }
-
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipeId,
-        action: 'UPDATE',
-        user_id: currentUser.id,
-        changes: { old: { status: 'draft' }, new: { status: 'pending' }, note: 'Submitted for approval' }
+            `,
     });
+  } catch (emailError) {
+    console.error("Email sending failed:", emailError);
+  }
 
-    revalidatePath('/dashboard/recipes');
-    return { success: true };
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipeId,
+    action: "UPDATE",
+    user_id: currentUser.id,
+    changes: {
+      old: { status: "draft" },
+      new: { status: "pending" },
+      note: "Submitted for approval",
+    },
+  });
+
+  revalidatePath("/dashboard/recipes");
+  return { success: true };
 }
 
 /**
@@ -714,43 +785,44 @@ export async function submitForApproval(recipeId: string, complianceReport: stri
  * - Logs acceptance
  */
 export async function startProduction(recipeId: string) {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return { error: 'Yetkisiz işlem' };
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { error: "Yetkisiz işlem" };
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { data: recipe, error: fetchError } = await supabase
-        .from('kts_recipes')
-        .select('status')
-        .eq('id', recipeId)
-        .single();
+  const { data: recipe, error: fetchError } = await supabase
+    .from("kts_recipes")
+    .select("status")
+    .eq("id", recipeId)
+    .single();
 
-    if (fetchError || !recipe) return { error: 'Reçete bulunamadı' };
-    if (recipe.status !== 'approved') return { error: 'Sadece onaylı reçeteler üretime alınabilir' };
+  if (fetchError || !recipe) return { error: "Reçete bulunamadı" };
+  if (recipe.status !== "approved")
+    return { error: "Sadece onaylı reçeteler üretime alınabilir" };
 
-    const { error: updateError } = await supabase
-        .from('kts_recipes')
-        .update({
-            status: 'in_production',
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', recipeId);
+  const { error: updateError } = await supabase
+    .from("kts_recipes")
+    .update({
+      status: "in_production",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", recipeId);
 
-    if (updateError) return { error: 'Üretim başlatılamadı' };
+  if (updateError) return { error: "Üretim başlatılamadı" };
 
-    // Log audit
-    await supabase.from('kts_audit_logs').insert({
-        table_name: 'recipes',
-        record_id: recipeId,
-        action: 'UPDATE',
-        user_id: currentUser.id,
-        changes: {
-            old: { status: 'approved' },
-            new: { status: 'in_production' },
-            note: 'Production started/accepted by user'
-        }
-    });
+  // Log audit
+  await supabase.from("kts_audit_logs").insert({
+    table_name: "recipes",
+    record_id: recipeId,
+    action: "UPDATE",
+    user_id: currentUser.id,
+    changes: {
+      old: { status: "approved" },
+      new: { status: "in_production" },
+      note: "Production started/accepted by user",
+    },
+  });
 
-    revalidatePath('/dashboard/recipes');
-    return { success: true };
+  revalidatePath("/dashboard/recipes");
+  return { success: true };
 }

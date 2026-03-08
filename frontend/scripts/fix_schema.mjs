@@ -1,22 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.local" });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing Supabase Service Key or URL');
-    process.exit(1);
+  console.error("Missing Supabase Service Key or URL");
+  process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function fixSchema() {
-    console.log('--- Fixing recipes table schema ---');
+  console.log("--- Fixing recipes table schema ---");
 
-    const sql = `
+  const sql = `
     ALTER TABLE recipes 
     ADD COLUMN IF NOT EXISTS order_code TEXT,
     ADD COLUMN IF NOT EXISTS color_name TEXT,
@@ -36,23 +36,27 @@ async function fixSchema() {
     ADD COLUMN IF NOT EXISTS c_cozg TEXT;
   `;
 
-    // Note: createClient can't execute raw SQL easily unless using a special endpoint or rpc
-    // But we can try to use a simple rpc if it exists, or just use the management API if we had it.
-    // Actually, standard supabase-js doesn't have .sql().
-    // Let's check if there's an 'exec_sql' rpc or similar.
+  // Note: createClient can't execute raw SQL easily unless using a special endpoint or rpc
+  // But we can try to use a simple rpc if it exists, or just use the management API if we had it.
+  // Actually, standard supabase-js doesn't have .sql().
+  // Let's check if there's an 'exec_sql' rpc or similar.
 
-    console.log('Attempting to execute ALTER TABLE via RPC (if exists)...');
-    const { error } = await supabase.rpc('execute_sql', { sql_query: sql });
+  console.log("Attempting to execute ALTER TABLE via RPC (if exists)...");
+  const { error } = await supabase.rpc("execute_sql", { sql_query: sql });
 
-    if (error) {
-        console.log('RPC execute_sql failed (likely not exists):', error.message);
-        console.log('Trying to use fetch to call the REST API with Service Key (sometimes works for DDL if configured)');
+  if (error) {
+    console.log("RPC execute_sql failed (likely not exists):", error.message);
+    console.log(
+      "Trying to use fetch to call the REST API with Service Key (sometimes works for DDL if configured)",
+    );
 
-        // Fallback: This usually won't work for DDL unless PostgREST is configured to allow it (unlikely)
-        console.log('Please apply the migration manually or I will try to use the MCP helper if I can fix the connection.');
-    } else {
-        console.log('Schema fixed successfully!');
-    }
+    // Fallback: This usually won't work for DDL unless PostgREST is configured to allow it (unlikely)
+    console.log(
+      "Please apply the migration manually or I will try to use the MCP helper if I can fix the connection.",
+    );
+  } else {
+    console.log("Schema fixed successfully!");
+  }
 }
 
 fixSchema();

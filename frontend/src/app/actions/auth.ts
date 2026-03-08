@@ -1,105 +1,111 @@
-'use server';
+"use server";
 
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { loginSchema } from '@/lib/validations/auth';
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "../../lib/supabase/server";
+import { loginSchema } from "../../lib/validations/auth";
 
 /**
  * Sign in with email and password
  */
 export async function signIn(formData: FormData) {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-    // Validate input
-    const validation = loginSchema.safeParse({ email, password });
-    if (!validation.success) {
-        return {
-            error: validation.error.errors[0].message,
-        };
-    }
+  // Validate input
+  const validation = loginSchema.safeParse({ email, password });
+  if (!validation.success) {
+    return {
+      error: validation.error.errors[0].message,
+    };
+  }
 
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    // Sign in with Supabase Auth
-    const { error: authError } = await supabase.auth.signInWithPassword({
-        email: validation.data.email,
-        password: validation.data.password,
-    });
+  // Sign in with Supabase Auth
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: validation.data.email,
+    password: validation.data.password,
+  });
 
-    if (authError) {
-        return {
-            error: 'Email veya şifre hatalı',
-        };
-    }
+  if (authError) {
+    return {
+      error: "Email veya şifre hatalı",
+    };
+  }
 
-    // Redirect to dashboard
-    redirect('/dashboard');
+  // Redirect to dashboard
+  redirect("/dashboard");
 }
 
 /**
  * Sign out current user
  */
 export async function signOut() {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
 
-    if (error) {
-        return {
-            error: 'Çıkış yapılırken bir hata oluştu',
-        };
-    }
+  if (error) {
+    return {
+      error: "Çıkış yapılırken bir hata oluştu",
+    };
+  }
 
-    revalidatePath('/', 'layout');
-    redirect('/login');
+  revalidatePath("/", "layout");
+  redirect("/login");
 }
 
 /**
  * Get current authenticated user with profile data
  */
 export async function getCurrentUser() {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    // Get auth user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // Get auth user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-        return null;
-    }
+  if (authError || !user) {
+    return null;
+  }
 
-    // Fetch profile data from kts_users
-    const { data: profile, error: profileError } = await supabase
-        .from('kts_users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  // Fetch profile data from kts_users
+  const { data: profile, error: profileError } = await supabase
+    .from("kts_users")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
-    if (profileError || !profile) {
-        return null;
-    }
+  if (profileError || !profile) {
+    return null;
+  }
 
-    // Update last login time
-    await supabase
-        .from('kts_users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', user.id);
+  // Update last login time
+  await supabase
+    .from("kts_users")
+    .update({ last_login_at: new Date().toISOString() })
+    .eq("id", user.id);
 
-    return profile;
+  return profile;
 }
 
 /**
  * Get current session
  */
 export async function getSession() {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { data: { session }, error } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
 
-    if (error) {
-        return null;
-    }
+  if (error) {
+    return null;
+  }
 
-    return session;
+  return session;
 }

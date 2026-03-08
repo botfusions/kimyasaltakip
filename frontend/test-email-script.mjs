@@ -1,26 +1,26 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 // Email ayarları (SQL'den aldığımız değerler)
-const RESEND_API_KEY = 're_imv7Zsfa_7tD72N9B2g98B2ypdwUzmwNC';
-const EMAIL_FROM = 'onboarding@resend.dev';
-const EMAIL_TO = ['aziz.guc@goldstarteks.com'];
+const RESEND_API_KEY = "re_imv7Zsfa_7tD72N9B2g98B2ypdwUzmwNC";
+const EMAIL_FROM = "onboarding@resend.dev";
+const EMAIL_TO = ["aziz.guc@goldstarteks.com"];
 
 async function testEmail() {
-    console.log('📧 Email testi başlatılıyor...\n');
+  console.log("📧 Email testi başlatılıyor...\n");
 
-    try {
-        const resend = new Resend(RESEND_API_KEY);
+  try {
+    const resend = new Resend(RESEND_API_KEY);
 
-        console.log('🔑 API Key:', RESEND_API_KEY.substring(0, 10) + '...');
-        console.log('📤 Gönderici:', EMAIL_FROM);
-        console.log('📥 Alıcı:', EMAIL_TO);
-        console.log('\n✉️  Email gönderiliyor...\n');
+    console.log("🔑 API Key:", RESEND_API_KEY.substring(0, 10) + "...");
+    console.log("📤 Gönderici:", EMAIL_FROM);
+    console.log("📥 Alıcı:", EMAIL_TO);
+    console.log("\n✉️  Email gönderiliyor...\n");
 
-        const { data, error } = await resend.emails.send({
-            from: EMAIL_FROM,
-            to: EMAIL_TO,
-            subject: 'Kimyasal Takip Sistemi - Test Email ✅',
-            html: `
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_FROM,
+      to: EMAIL_TO,
+      subject: "Kimyasal Takip Sistemi - Test Email ✅",
+      html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2563eb; border-bottom: 3px solid #2563eb; padding-bottom: 10px;">
                         🧪 Kimyasal Takip Sistemi
@@ -47,24 +47,25 @@ async function testEmail() {
                     </p>
                 </div>
             `,
-            text: 'Kimyasal Takip Sistemi test emaili. Email sisteminiz başarıyla çalışıyor!',
-        });
+      text: "Kimyasal Takip Sistemi test emaili. Email sisteminiz başarıyla çalışıyor!",
+    });
 
-        if (error) {
-            console.error('❌ Email gönderme hatası:', error);
-            process.exit(1);
-        }
-
-        console.log('✅ Email başarıyla gönderildi!\n');
-        console.log('📊 Resend Response:');
-        console.log(JSON.stringify(data, null, 2));
-        console.log('\n🎯 Lütfen ' + EMAIL_TO + ' adresindeki gelen kutunuzu kontrol edin!');
-
-    } catch (error) {
-        console.error('❌ Fatal hata:', error.message);
-        console.error(error);
-        process.exit(1);
+    if (error) {
+      console.error("❌ Email gönderme hatası:", error);
+      process.exit(1);
     }
+
+    console.log("✅ Email başarıyla gönderildi!\n");
+    console.log("📊 Resend Response:");
+    console.log(JSON.stringify(data, null, 2));
+    console.log(
+      "\n🎯 Lütfen " + EMAIL_TO + " adresindeki gelen kutunuzu kontrol edin!",
+    );
+  } catch (error) {
+    console.error("❌ Fatal hata:", error.message);
+    console.error(error);
+    process.exit(1);
+  }
 }
 
 testEmail();

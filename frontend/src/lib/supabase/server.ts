@@ -1,16 +1,16 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export async function createClient() {
   let cookieStore;
   try {
-    const { cookies } = await import('next/headers');
+    const { cookies } = await import("next/headers");
     cookieStore = await cookies();
   } catch (e) {
     // If headers/cookies are not available, return a standard non-cookie client
     return createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
   }
 
@@ -20,11 +20,11 @@ export async function createClient() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value
+          return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value, ...options })
+            cookieStore.set({ name, value, ...options });
           } catch (error) {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
@@ -33,7 +33,7 @@ export async function createClient() {
         },
         remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options })
+            cookieStore.set({ name, value: "", ...options });
           } catch (error) {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
@@ -41,8 +41,8 @@ export async function createClient() {
           }
         },
       },
-    }
-  )
+    },
+  );
 }
 
 export function createAdminClient() {
@@ -54,7 +54,6 @@ export function createAdminClient() {
         autoRefreshToken: false,
         persistSession: false,
       },
-    }
-  )
+    },
+  );
 }
-

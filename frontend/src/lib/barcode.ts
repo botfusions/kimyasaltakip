@@ -1,4 +1,4 @@
-import JsBarcode from 'jsbarcode';
+import JsBarcode from "jsbarcode";
 
 /**
  * Generates a barcode as a data URL for a given value
@@ -7,31 +7,31 @@ import JsBarcode from 'jsbarcode';
  * @returns Data URL of the generated barcode image
  */
 export function generateBarcodeDataURL(
-    value: string,
-    format: 'CODE128' | 'CODE39' | 'EAN13' | 'EAN8' | 'UPC' = 'CODE128'
+  value: string,
+  format: "CODE128" | "CODE39" | "EAN13" | "EAN8" | "UPC" = "CODE128",
 ): string {
-    try {
-        // Create a canvas element
-        const canvas = document.createElement('canvas');
+  try {
+    // Create a canvas element
+    const canvas = document.createElement("canvas");
 
-        // Generate barcode on canvas
-        JsBarcode(canvas, value, {
-            format: format,
-            width: 2,
-            height: 60,
-            displayValue: true,
-            fontSize: 14,
-            margin: 10,
-            background: '#ffffff',
-            lineColor: '#000000',
-        });
+    // Generate barcode on canvas
+    JsBarcode(canvas, value, {
+      format: format,
+      width: 2,
+      height: 60,
+      displayValue: true,
+      fontSize: 14,
+      margin: 10,
+      background: "#ffffff",
+      lineColor: "#000000",
+    });
 
-        // Return data URL
-        return canvas.toDataURL('image/png');
-    } catch (error) {
-        console.error('Barcode generation error:', error);
-        return '';
-    }
+    // Return data URL
+    return canvas.toDataURL("image/png");
+  } catch (error) {
+    console.error("Barcode generation error:", error);
+    return "";
+  }
 }
 
 /**
@@ -40,23 +40,23 @@ export function generateBarcodeDataURL(
  * @returns SVG string
  */
 export function generateBarcodeSVG(value: string): string {
-    try {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  try {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
-        JsBarcode(svg, value, {
-            format: 'CODE128',
-            width: 2,
-            height: 60,
-            displayValue: true,
-            fontSize: 14,
-            margin: 10,
-        });
+    JsBarcode(svg, value, {
+      format: "CODE128",
+      width: 2,
+      height: 60,
+      displayValue: true,
+      fontSize: 14,
+      margin: 10,
+    });
 
-        return svg.outerHTML;
-    } catch (error) {
-        console.error('Barcode SVG generation error:', error);
-        return '';
-    }
+    return svg.outerHTML;
+  } catch (error) {
+    console.error("Barcode SVG generation error:", error);
+    return "";
+  }
 }
 
 /**
@@ -64,20 +64,23 @@ export function generateBarcodeSVG(value: string): string {
  * @param value Barcode value
  * @param filename Download filename
  */
-export function downloadBarcode(value: string, filename: string = 'barcode.png'): void {
-    const dataURL = generateBarcodeDataURL(value);
+export function downloadBarcode(
+  value: string,
+  filename: string = "barcode.png",
+): void {
+  const dataURL = generateBarcodeDataURL(value);
 
-    if (!dataURL) {
-        console.error('Failed to generate barcode');
-        return;
-    }
+  if (!dataURL) {
+    console.error("Failed to generate barcode");
+    return;
+  }
 
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataURL;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /**
@@ -86,9 +89,9 @@ export function downloadBarcode(value: string, filename: string = 'barcode.png')
  * @returns true if valid RATEKS barcode format
  */
 export function validateBarcodeFormat(barcode: string): boolean {
-    // Format: RTKS-YYYYMMDD-NNNN
-    const pattern = /^RTKS-\d{8}-\d{4}$/;
-    return pattern.test(barcode);
+  // Format: RTKS-YYYYMMDD-NNNN
+  const pattern = /^RTKS-\d{8}-\d{4}$/;
+  return pattern.test(barcode);
 }
 
 /**
@@ -97,16 +100,16 @@ export function validateBarcodeFormat(barcode: string): boolean {
  * @returns Object with date and sequence number, or null if invalid
  */
 export function parseBarcodeComponents(barcode: string): {
-    date: string;
-    sequence: string;
+  date: string;
+  sequence: string;
 } | null {
-    if (!validateBarcodeFormat(barcode)) {
-        return null;
-    }
+  if (!validateBarcodeFormat(barcode)) {
+    return null;
+  }
 
-    const parts = barcode.split('-');
-    return {
-        date: parts[1], // YYYYMMDD
-        sequence: parts[2], // NNNN
-    };
+  const parts = barcode.split("-");
+  return {
+    date: parts[1], // YYYYMMDD
+    sequence: parts[2], // NNNN
+  };
 }

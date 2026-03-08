@@ -6,23 +6,23 @@ const nextConfig = {
     // Allow images from Supabase storage and localhost
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        pathname: '/storage/v1/object/public/**',
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
       },
       {
-        protocol: 'http',
-        hostname: 'localhost',
+        protocol: "http",
+        hostname: "localhost",
       },
     ],
     // Optimize images for production
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
   },
 
   // Enable experimental features for Netlify compatibility
   experimental: {
     // Server Actions are stable in Next.js 14
-    serverComponentsExternalPackages: ['pg'],
+    serverComponentsExternalPackages: ["pg"],
   },
 
   // Ignore TypeScript errors during build (handled by CI)
@@ -40,31 +40,34 @@ const nextConfig = {
   // Optimize production bundles
   compiler: {
     // Remove console.log in production
-    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
   },
 
   // Security headers (also defined in netlify.toml for redundancy)
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

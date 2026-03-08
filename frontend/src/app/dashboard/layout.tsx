@@ -1,34 +1,36 @@
-import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/app/actions/auth';
-import DashboardSidebar from '@/components/dashboard/Sidebar';
-import DashboardHeader from '@/components/dashboard/Header';
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "../actions/auth";
+import DashboardSidebar from "../../components/dashboard/Sidebar";
+import DashboardHeader from "../../components/dashboard/Header";
+import { ThemeProvider } from "../../components/ThemeProvider";
 
 export default async function DashboardLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    const user = await getCurrentUser();
+  const user = await getCurrentUser();
 
-    if (!user) {
-        redirect('/login');
-    }
+  if (!user) {
+    redirect("/login");
+  }
 
-    return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Sidebar */}
-            <DashboardSidebar userRole={user.role} />
-
-            {/* Main Content Area */}
-            <div className="flex flex-col flex-1 overflow-hidden">
-                {/* Header */}
-                <DashboardHeader user={user} />
-
-                {/* Page Content */}
-                <main className="flex-1 overflow-y-auto p-6">
-                    {children}
-                </main>
-            </div>
-        </div>
-    );
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <DashboardSidebar user={user as any} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader user={user as any} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </main>
+      </div>
+    </div>
+  );
 }
