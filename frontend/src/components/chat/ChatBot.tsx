@@ -14,10 +14,9 @@ interface Message {
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>([    {
       role: "bot",
-      content: "Merhaba! Ben Kimyasal Takip Sistemi RAG Uzmanı. Bilgi bankasındaki formüller, standartlar ve dokümanlar hakkında bana soru sorabilirsin.",
+      content: "BEn ktsbot size nasıl yardımcı olabilirm",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
